@@ -125,7 +125,7 @@ vlm_planner:
 
 Subtask-planner prompt:
 
-- the planner now receives the overarching task from
+- the planner now requires the overarching task from
   `env.train.task_description` explicitly
 - it uses that main goal together with recent images and planner memory when
   generating the next subtask

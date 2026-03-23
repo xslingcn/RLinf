@@ -363,27 +363,29 @@ class VLMPlannerWorker:
     def get_next_subtask(
         self,
         images: list[np.ndarray],
+        main_task: str,
         memory: Optional[str] = None,
-        main_task: Optional[str] = None,
     ) -> str:
         """Generate the next subtask instruction from observations.
 
         Args:
             images: List of uint8 RGB images (H, W, 3) from robot cameras.
+            main_task: Overarching task description for the episode.
             memory: Optional explicit memory string.  If None, uses internal
                 rolling buffer.
-            main_task: Optional overarching task description for the episode.
 
         Returns:
             Subtask instruction string, e.g. "pick up the red block".
         """
+        if not main_task.strip():
+            raise ValueError("get_next_subtask requires a non-empty main_task.")
         if memory is None:
             memory = self.get_memory_text()
 
-        user_text_parts = []
-        if main_task:
-            user_text_parts.append(f"Overall task:\n{main_task}")
-        user_text_parts.append(f"History of past steps:\n{memory}")
+        user_text_parts = [
+            f"Overall task:\n{main_task}",
+            f"History of past steps:\n{memory}",
+        ]
         user_text_parts.append(
             "What is the single best next subtask for the robot to execute?"
         )

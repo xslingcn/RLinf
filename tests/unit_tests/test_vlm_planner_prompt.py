@@ -40,3 +40,21 @@ def test_get_next_subtask_prompt_includes_main_task():
 
     assert "Overall task:\nfold the towel" in prompt
     assert "History of past steps:\nstep 1: moved toward towel" in prompt
+
+
+def test_get_next_subtask_requires_main_task():
+    worker = VLMPlannerWorker.__new__(VLMPlannerWorker)
+    worker._logger = _FakeLogger()
+    worker._max_new_tokens_subtask = 64
+    worker._build_qwen_messages = lambda _system, _images, user_text: user_text
+    worker._generate = lambda messages, _tokens: messages
+
+    try:
+        worker.get_next_subtask(
+            images=[np.zeros((8, 8, 3), dtype=np.uint8)],
+            main_task="  ",
+        )
+    except ValueError as exc:
+        assert "non-empty main_task" in str(exc)
+    else:
+        raise AssertionError("Expected get_next_subtask() to require main_task.")

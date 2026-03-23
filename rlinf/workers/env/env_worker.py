@@ -215,11 +215,15 @@ class EnvWorker(Worker):
         memory_ref = self._vlm_planner.get_memory_text.remote()
         memory = ray.get(memory_ref)
 
-        main_task = self._initial_task_descriptions[stage_id]
+        main_task = self._initial_task_descriptions[stage_id].strip()
+        if not main_task:
+            raise ValueError(
+                "Subtask planning requires a non-empty env.train.task_description."
+            )
         subtask_ref = self._vlm_planner.get_next_subtask.remote(
             images,
-            memory,
             main_task,
+            memory,
         )
         new_subtask: str = ray.get(subtask_ref)
 
