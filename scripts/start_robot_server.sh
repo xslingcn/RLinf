@@ -248,6 +248,7 @@ echo "Port:   ${PORT}"
 echo ""
 
 SERVER_ARGS=(--config-path "${CONFIG}" --port "${PORT}")
+SERVER_ARGS+=(--max-message-size "33554432")
 [ "$DUMMY" = true ] && SERVER_ARGS+=(--dummy)
 
 python -m rlinf.envs.remote.robot_server "${SERVER_ARGS[@]}" &
