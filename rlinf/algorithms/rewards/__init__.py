@@ -32,11 +32,6 @@ def get_reward_class(name: str):
 
 reward_registry = {}
 _LAZY_REWARD_IMPORTS = {
-    "math": ("rlinf.algorithms.rewards.math", "MathReward"),
-    "vqa": ("rlinf.algorithms.rewards.vqa", "VQAReward"),
-    "code_offline": ("rlinf.algorithms.rewards.code", "CodeRewardOffline"),
-    "searchr1": ("rlinf.algorithms.rewards.searchr1", "SearchR1Reward"),
-    "rstar2": ("rlinf.algorithms.rewards.rstar2", "Rstar2Reward"),
     "subtask": ("rlinf.algorithms.rewards.subtask", "SubtaskReward"),
     "top_reward": ("rlinf.algorithms.rewards.top_reward", "TOPReward"),
 }

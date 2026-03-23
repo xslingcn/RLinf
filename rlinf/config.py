@@ -82,13 +82,7 @@ def get_supported_model(model_type: str) -> SupportedModel:
 
 
 SUPPORTED_ROLLOUT_BACKENDS = ["sglang", "vllm"]
-SUPPORTED_TASK_TYPE = [
-    "embodied",
-    "reasoning",
-    "reasoning_eval",
-    "coding_online_rl",
-    "sft",
-]
+SUPPORTED_TASK_TYPE = ["embodied"]
 SUPPORTED_TRAINING_BACKENDS = ["megatron", "fsdp"]
 __all__ = ["build_config"]
 
@@ -1093,15 +1087,6 @@ def validate_cfg(cfg: DictConfig) -> DictConfig:
     )
     if cfg.runner.task_type == "embodied":
         cfg = validate_embodied_cfg(cfg)
-    elif cfg.runner.task_type == "reasoning":
-        cfg = validate_reasoning_cfg(cfg)
-    elif cfg.runner.task_type == "coding_online_rl":
-        cfg = validate_coding_online_rl_cfg(cfg)
-    elif cfg.runner.task_type == "reasoning_eval":
-        cfg = validate_reasoning_eval_cfg(cfg)
-        return cfg
-    elif cfg.runner.task_type == "sft":
-        cfg = validate_sft_cfg(cfg)
 
     if cfg.algorithm.adv_type in ("grpo", "grpo_dynamic", "reinpp_baseline"):
         assert cfg.algorithm.group_size > 1
