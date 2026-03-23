@@ -9,8 +9,8 @@
 # Topology (both configs, single Beaker node):
 #   GPU 0 — actor (FSDP training)
 #   GPU 1 — rollout (inference)
-#   GPU 2 — VLM planner (Qwen3-VL-8B, TOPReward scoring; + subtask for topreward variant)
-#   CPU   — RemoteEnv (gRPC to robot server via SSH tunnel)
+#   GPU 2 — marl sidecar (TOPReward scoring; + subtask planning for the topreward variant)
+#   CPU   — RobotWorker (RemoteRobotClient via gRPC to the robot server)
 #
 # The robot server runs on the local desktop with a reverse SSH tunnel
 # to the Beaker head node.
@@ -157,10 +157,7 @@ case "$CONFIG_NAME" in
         ENTRY_SCRIPT="train_embodied_agent_marl.py"
         [ "$GPUS" -eq 0 ] && GPUS=3
         ;;
-    *topreward*|*staged*)
-        # All YAM configs use TOPReward → 3 GPUs, staged entry point.
-        # yam_ppo_openpi uses TOPReward with subtask_interval=0 (no subtask planning).
-        # yam_ppo_openpi_topreward also enables subtask planning (subtask_interval=3).
+    *staged*)
         IS_TOPREWARD=true
         ENTRY_SCRIPT="train_embodied_agent_staged.py"
         [ "$GPUS" -eq 0 ] && GPUS=3
@@ -271,17 +268,15 @@ else
     TRAIN_CMD+=" --config-name ${CONFIG_NAME}"
     TRAIN_CMD+=" cluster.num_nodes=${REPLICAS}"
 
-    # For single replica the placement is baked into the config:
-    #   yam_ppo_openpi:           actor:0  rollout:1
-    #   yam_ppo_openpi_topreward: actor:0  rollout:1  VLM:2 (heuristic: max(0,1)+1)
+    # For single replica the placement is baked into the config.
     # For multiple replicas, distribute actor + rollout across node ranks.
     if [ "$REPLICAS" -gt 1 ]; then
         LAST_RANK=$((REPLICAS - 1))
         ALL_RANKS=$(seq -s, 0 "$LAST_RANK")
         TRAIN_CMD+=" 'cluster.component_placement.actor.placement=0-${LAST_RANK}'"
         TRAIN_CMD+=" 'cluster.component_placement.rollout.placement=0-${LAST_RANK}'"
-        if [ "$IS_TOPREWARD" = true ]; then
-            # WARNING: Multi-replica placement for VLM configs is NOT fully tested.
+        if [ "$ENTRY_SCRIPT" = "train_embodied_agent_staged.py" ]; then
+            # WARNING: Multi-replica placement for legacy staged configs is not fully tested.
             TRAIN_CMD+=" 'cluster.node_groups=[{label: gpu, node_ranks: \"${ALL_RANKS}\"}, {label: beaker_vlm, node_ranks: 0}]'"
         else
             TRAIN_CMD+=" 'cluster.node_groups=[{label: gpu, node_ranks: \"${ALL_RANKS}\"}]'"

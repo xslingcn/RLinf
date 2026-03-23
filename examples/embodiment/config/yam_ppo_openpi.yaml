@@ -1,18 +1,17 @@
-# YAM bimanual robot – PPO training with π₀.5 (OpenPI) policy, RemoteEnv, and marl-backed TOPReward.
+# YAM bimanual robot – PPO training with π₀.5 (OpenPI) policy and marl-backed TOPReward.
 #
 # Algorithm: PPO with GAE advantage and value head.
 # Reward:    TOPReward dense progress signal (Qwen3-VL-8B).
 #            No custom reward code required.
 #
 # Difference from yam_ppo_openpi_topreward.yaml:
-#   subtask_interval: 0  — VLM predicts no subtasks; TOPReward scoring only.
-#   Set subtask_interval > 0 to enable VLM subtask planning (see topreward config).
+#   marl.planner.interval: 0  — no subtask planning; TOPReward scoring only.
 #
 # Hardware topology (single Beaker node, 3 GPUs):
 #   GPU 0 – actor (π₀.5 FSDP training with value head)
 #   GPU 1 – rollout (π₀.5 inference)
 #   GPU 2 – marl sidecar (planner / TOPReward service)
-#   CPU   – EnvWorker (RemoteEnv gRPC client → desktop RobotServer)
+#   CPU   – RobotWorker (RemoteRobotClient → desktop RobotServer)
 #
 # Desktop:
 #   RobotServer wrapping YAMEnv, exposed via reverse SSH tunnel on :50051.
@@ -53,12 +52,10 @@ cluster:
       placement: 1   # π₀.5 requires a dedicated GPU; cannot share GPU 0 with actor
     env:
       node_group: "gpu"
-      placement: 0   # RemoteEnv runs CPU-only; placement on same node
+      placement: 0   # RobotWorker runs CPU-only; placement on same node
   node_groups:
     - label: "gpu"
       node_ranks: 0
-    - label: "beaker_vlm"
-      node_ranks: 0  # VLMPlannerWorker placement group on the Beaker node
 
 runner:
   task_type: embodied
@@ -132,7 +129,7 @@ env:
   group_name: "EnvGroup"
   # Optional local simulation of the robot desktop input path.
   # When enabled, train_embodied_agent_marl.py starts a local dummy
-  # RobotServer automatically, so RemoteEnv still talks over gRPC but no
+  # RobotServer automatically, so RobotWorker still talks over gRPC but no
   # separate desktop machine or reverse SSH tunnel is required.
   #
   # Keep env.train.remote_server_url / env.eval.remote_server_url pointed at
@@ -151,16 +148,8 @@ env:
 
     task_description: "bimanual pick and place"
 
-    # Enable TOPReward dense progress signal.
-    top_reward_enabled: True
-    top_reward_max_frames: 16
-
-    # Subtask planning disabled — VLM is used for TOPReward only.
-    # Set subtask_interval > 0 to enable VLM subtask predictions (see topreward config).
-    subtask_interval: 0
-
     # Dummy mode: controlled at the ROBOT SERVER, not here.
-    # RemoteEnv does not read is_dummy — it proxies calls over gRPC to the server.
+    # RobotWorker does not read is_dummy — it proxies calls over gRPC to the server.
     # To test without real hardware, start the robot server with --dummy:
     #   bash scripts/start_robot_server.sh --config .../yam_pi05_follower.yaml --dummy
 
@@ -186,25 +175,6 @@ marl:
     camera_name: "main"
     fps: 2.0
     max_frames: 16
-
-# Legacy in-process VLMPlanner config. The marl entrypoint does not use this
-# block; planner/reward now come from the out-of-process marl sidecar above.
-vlm_planner:
-  model_path: "Qwen/Qwen3-VL-8B-Instruct"
-  backend: "transformers"
-  dtype: "bfloat16"
-  # Optional explicit placement override. By default RLinf chooses GPU 2 here
-  # because actor and rollout occupy GPUs 0 and 1 on the same node.
-  # placement: 2
-  # Optional node-group override for the planner. Defaults to "beaker_vlm".
-  # node_group: "beaker_vlm"
-  max_new_tokens_subtask: 64
-  max_new_tokens_reward: 16
-  max_memory_entries: 20
-  success_threshold: 0.5
-  top_reward_enabled: True
-  top_reward_max_frames: 16
-  reward_scale: 1.0  # multiplied onto each log-prob score before delta computation
 
 rollout:
   group_name: "RolloutGroup"
@@ -274,8 +244,7 @@ actor:
       buffer_dtype: ${actor.model.precision}
 
 # reward section is metadata only when use_reward_model: False.
-# TOPReward is computed inline by VLMPlannerWorker (see vlm_planner.reward_scale above).
-# reward_scale here is NOT read by TOPReward — configure it under vlm_planner instead.
+# TOPReward comes from the marl sidecar configured above.
 reward:
   use_reward_model: False
   reward_type: top_reward

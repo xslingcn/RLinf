@@ -5,7 +5,7 @@
 #
 # TOPReward design:
 #   The marl sidecar serves dual roles:
-#     1. Subtask planning (optional, via subtask_interval).
+#     1. Subtask planning (optional, via marl.planner.interval).
 #     2. Dense reward scoring — after each chunk step, a forward pass extracts
 #        log p("True" | frames_1:t, instruction) as a progress score.
 #        The reward delta r_t = score_t - score_{t-1} is injected into EnvOutput.
@@ -14,7 +14,7 @@
 #   GPU 0 – actor (π₀.5 FSDP training with value head)
 #   GPU 1 – rollout (π₀.5 inference)
 #   GPU 2 – marl sidecar (TOPReward + subtask planning)
-#   CPU   – EnvWorker (RemoteEnv gRPC client → desktop RobotServer)
+#   CPU   – RobotWorker (RemoteRobotClient → desktop RobotServer)
 #
 # Desktop:
 #   RobotServer wrapping YAMEnv, exposed via reverse SSH tunnel on :50051.
@@ -25,7 +25,7 @@
 #   bash scripts/submit_yam_training.sh --config yam_ppo_openpi_topreward \
 #       --model-path thomas0829/folding_towel_pi05
 #
-# For TOPReward without VLM subtask planning, set subtask_interval: 0.
+# For TOPReward without subtask planning, set marl.planner.interval: 0.
 #
 # Prerequisites:
 #   pip install "transformers @ git+https://github.com/huggingface/transformers.git@main"
@@ -57,12 +57,10 @@ cluster:
       placement: 1   # π₀.5 requires a dedicated GPU; cannot share GPU 0 with actor
     env:
       node_group: "gpu"
-      placement: 0   # RemoteEnv runs CPU-only; placement on same node
+      placement: 0   # RobotWorker runs CPU-only; placement on same node
   node_groups:
     - label: "gpu"
       node_ranks: 0
-    - label: "beaker_vlm"
-      node_ranks: 0  # VLMPlannerWorker placement group on the Beaker node
 
 runner:
   task_type: embodied
@@ -136,7 +134,7 @@ env:
   group_name: "EnvGroup"
   # Optional local simulation of the robot desktop input path.
   # When enabled, train_embodied_agent_marl.py starts a local dummy
-  # RobotServer automatically, so RemoteEnv still talks over gRPC but no
+  # RobotServer automatically, so RobotWorker still talks over gRPC but no
   # separate desktop machine or reverse SSH tunnel is required.
   #
   # Keep env.train.remote_server_url / env.eval.remote_server_url pointed at
@@ -155,20 +153,8 @@ env:
 
     task_description: "bimanual manipulation"
 
-    # Enable TOPReward dense progress signal.
-    top_reward_enabled: True
-    top_reward_max_frames: 16
-
-    # Subtask update interval in CHUNK STEPS (0 to disable VLM planning).
-    # With num_action_chunks=10 and max_steps_per_rollout_epoch=100,
-    # n_train_chunk_steps=10. The EnvWorker resets the subtask counter at the
-    # start of each rollout epoch (bootstrap_step), so subtask_interval must
-    # be <= n_train_chunk_steps to fire within an episode.
-    # 3 chunk steps = 30 env steps = subtask update at 30%, 60%, 90% of episode.
-    subtask_interval: 3
-
     # Dummy mode: controlled at the ROBOT SERVER, not here.
-    # RemoteEnv does not read is_dummy — it proxies calls over gRPC to the server.
+    # RobotWorker does not read is_dummy — it proxies calls over gRPC to the server.
     # To test without real hardware, start the robot server with --dummy:
     #   bash scripts/start_robot_server.sh --config .../yam_pi05_follower.yaml --dummy
 
@@ -187,6 +173,9 @@ marl:
   healthcheck: True
   image_format: "jpeg"
   planner:
+    # Planner interval is measured in chunk steps.
+    # With num_action_chunks=10 and max_steps_per_rollout_epoch=100,
+    # n_train_chunk_steps=10, so interval=3 replans at 30%, 60%, 90% of an episode.
     interval: 3
     max_memory_entries: 20
   topreward:
@@ -194,26 +183,6 @@ marl:
     camera_name: "main"
     fps: 2.0
     max_frames: 16
-
-# Legacy in-process VLMPlanner config. The marl entrypoint does not use this
-# block; planner/reward now come from the out-of-process marl sidecar above.
-vlm_planner:
-  model_path: "Qwen/Qwen3-VL-8B-Instruct"
-  backend: "transformers"
-  dtype: "bfloat16"
-  transformers_runtime_path: ".qwen3_runtime"
-  # Optional explicit placement override. By default RLinf chooses GPU 2 here
-  # because actor and rollout occupy GPUs 0 and 1 on the same node.
-  # placement: 2
-  # Optional node-group override for the planner. Defaults to "beaker_vlm".
-  # node_group: "beaker_vlm"
-  max_new_tokens_subtask: 64
-  max_new_tokens_reward: 16
-  max_memory_entries: 20
-  success_threshold: 0.5
-  top_reward_enabled: True
-  top_reward_max_frames: 16
-  reward_scale: 1.0  # multiplied onto each log-prob score before delta computation
 
 rollout:
   group_name: "RolloutGroup"
@@ -282,8 +251,7 @@ actor:
       buffer_dtype: ${actor.model.precision}
 
 # reward section is metadata only when use_reward_model: False.
-# TOPReward is computed inline by VLMPlannerWorker (see vlm_planner.reward_scale above).
-# reward_scale here is NOT read by TOPReward — configure it under vlm_planner instead.
+# TOPReward comes from the marl sidecar configured above.
 reward:
   use_reward_model: False
   reward_type: top_reward

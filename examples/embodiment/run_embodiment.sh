@@ -29,18 +29,12 @@ fi
 
 # Auto-select entry script:
 #   - YAM marl configs use train_embodied_agent_marl.py
-#   - remaining VLM-planner configs use train_embodied_agent_staged.py
-#
-# Patterns:
-#   yam_ppo_openpi            — YAM PPO baseline (TOPReward via marl)
-#   yam_ppo_openpi_topreward  — YAM PPO + subtask planning via marl
-#   *staged*        — configs with VLM subtask planning
-#   *topreward*     — TOPReward configs (VLM dense reward)
+#   - explicit staged configs use train_embodied_agent_staged.py
 case "$CONFIG_NAME" in
     yam_ppo_openpi|yam_ppo_openpi_topreward|*marl*)
         SRC_FILE="${EMBODIED_PATH}/train_embodied_agent_marl.py"
         ;;
-    *staged*|*topreward*)
+    *staged*)
         SRC_FILE="${EMBODIED_PATH}/train_embodied_agent_staged.py"
         ;;
     *)

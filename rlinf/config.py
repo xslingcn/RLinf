@@ -773,9 +773,13 @@ def validate_embodied_cfg(cfg):
                 "Set rollout.collect_prev_infos: true in the config."
             )
 
-    # Warn if subtask_interval > n_train_chunk_steps: the subtask planner would
-    # never fire because bootstrap_step() resets the counter every rollout epoch.
-    subtask_interval = cfg.env.train.get("subtask_interval", 0)
+    # Warn if the planner interval is larger than the number of chunk steps in
+    # a rollout epoch: the planner would never fire because bootstrap_step()
+    # resets the counter every rollout epoch.
+    if cfg.get("marl", {}).get("enabled", False):
+        subtask_interval = cfg.marl.get("planner", {}).get("interval", 0)
+    else:
+        subtask_interval = cfg.env.train.get("subtask_interval", 0)
     max_steps = cfg.env.train.get("max_steps_per_rollout_epoch", None)
     num_chunks = cfg.actor.model.get("num_action_chunks", None)
     if subtask_interval > 0 and max_steps is not None and num_chunks is not None:

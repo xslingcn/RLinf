@@ -7,8 +7,9 @@
 #   2. This script joins the cluster from the desktop and runs training locally.
 #
 # NOTE: The canonical YAM configs (yam_ppo_openpi, yam_ppo_openpi_topreward) use
-# env/remote_yam (RemoteEnv via gRPC) and cluster.num_nodes: 1.  For those configs,
-# use submit_yam_training.sh instead — it runs everything on Beaker.
+# train_embodied_agent_marl.py with RobotWorker + RemoteRobotClient and
+# cluster.num_nodes: 1. For those configs, use submit_yam_training.sh instead —
+# it runs everything on Beaker.
 #
 # This script is useful when you have a custom config with env/yam (direct YAMEnv)
 # and a multi-node cluster layout that puts the env worker on the desktop.  In that
@@ -90,7 +91,7 @@ case "$CONFIG_NAME" in
     yam_ppo_openpi|yam_ppo_openpi_topreward|*marl*)
         ENTRY_SCRIPT="train_embodied_agent_marl.py"
         ;;
-    *topreward*|*staged*)
+    *staged*)
         ENTRY_SCRIPT="train_embodied_agent_staged.py"
         ;;
 esac
