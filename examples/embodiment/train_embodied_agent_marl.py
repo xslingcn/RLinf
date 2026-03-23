@@ -28,7 +28,7 @@ from rlinf.envs.remote.simulated_desktop import (
 from rlinf.runners.embodied_runner import EmbodiedRunner
 from rlinf.scheduler import Cluster
 from rlinf.utils.placement import HybridComponentPlacement
-from rlinf.workers.env.env_worker import EnvWorker
+from rlinf.workers.robot.robot_worker import RobotWorker
 from rlinf.workers.rollout.hf.huggingface_worker import MultiStepRolloutWorker
 
 mp.set_start_method("spawn", force=True)
@@ -72,7 +72,7 @@ def main(cfg) -> None:
         )
 
         env_placement = component_placement.get_strategy("env")
-        env_group = EnvWorker.create_group(cfg).launch(
+        env_group = RobotWorker.create_group(cfg).launch(
             cluster, name=cfg.env.group_name, placement_strategy=env_placement
         )
 

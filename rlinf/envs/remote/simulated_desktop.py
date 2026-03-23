@@ -183,7 +183,7 @@ def launch_simulated_desktop_server(
         cmd.append("--dummy")
 
     print(
-        "[train_embodied_agent_staged] Starting simulated remote desktop "
+        "[train_embodied_agent_marl] Starting simulated remote desktop "
         f"RobotServer at {spec.host}:{spec.port} "
         f"(dummy={spec.dummy}, config={spec.env_config_path})"
     )
