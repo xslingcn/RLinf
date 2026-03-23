@@ -58,7 +58,7 @@ import torch.multiprocessing as mp
 from omegaconf.omegaconf import OmegaConf
 
 from rlinf.config import validate_cfg
-from rlinf.envs.remote.simulated_desktop import (
+from rlinf.envs.yam.remote.simulated_desktop import (
     launch_simulated_desktop_server,
     stop_process,
 )

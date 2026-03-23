@@ -104,7 +104,7 @@ def build_simulated_desktop_server_spec(
     env_config_path = sim_cfg.get("env_config_path", None)
     if env_config_path is None:
         env_config_path = default_env_config_path or (
-            Path(__file__).resolve().parents[3]
+            Path(__file__).resolve().parents[4]
             / "examples"
             / "embodiment"
             / "config"
@@ -171,7 +171,7 @@ def launch_simulated_desktop_server(
     cmd = [
         sys.executable,
         "-m",
-        "rlinf.envs.remote.robot_server",
+        "rlinf.envs.yam.remote.robot_server",
         "--config-path",
         spec.env_config_path,
         "--port",

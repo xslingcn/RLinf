@@ -33,7 +33,7 @@ import numpy as np
 import torch
 from omegaconf import DictConfig
 
-from rlinf.envs.remote.proto import robot_env_pb2, robot_env_pb2_grpc
+from rlinf.envs.yam.remote.proto import robot_env_pb2, robot_env_pb2_grpc
 from rlinf.envs.utils import to_tensor
 from rlinf.scheduler import WorkerInfo
 from rlinf.utils.logging import get_logger

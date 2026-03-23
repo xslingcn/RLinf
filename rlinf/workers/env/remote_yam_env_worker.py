@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Dedicated worker for the marl-backed remote robot training path."""
+"""Dedicated env-side worker for the marl-backed remote robot training path."""
 
 from __future__ import annotations
 
@@ -37,11 +37,11 @@ from rlinf.scheduler import Channel, Cluster, Worker
 from rlinf.utils.comm_mapping import CommMapper
 from rlinf.utils.metric_utils import compute_split_num
 from rlinf.utils.placement import HybridComponentPlacement
-from rlinf.workers.robot.remote_robot_client import RemoteRobotClient
+from rlinf.envs.yam.remote.robot_server_client import RobotServerClient
 
 
-class RobotWorker(Worker):
-    """Dedicated worker for remote robot execution plus marl orchestration."""
+class RemoteYamEnvWorker(Worker):
+    """Dedicated env worker for remote robot execution plus marl orchestration."""
 
     def __init__(self, cfg: DictConfig):
         Worker.__init__(self)
@@ -107,24 +107,24 @@ class RobotWorker(Worker):
         )
         self.actor_split_num = self.get_actor_split_num()
 
-        self.robot_clients: list[RemoteRobotClient] = []
-        self.eval_robot_clients: list[RemoteRobotClient] = []
+        self.robot_clients: list[RobotServerClient] = []
+        self.eval_robot_clients: list[RobotServerClient] = []
         self.last_obs_list: list[dict] = []
         self.last_intervened_info_list: list[tuple[torch.Tensor | None, torch.Tensor | None]] = []
 
     def _validate_supported_cfg(self) -> None:
         if str(self.cfg.env.train.env_type) != "remote":
             raise ValueError(
-                "RobotWorker only supports env.train.env_type=remote, got "
+                "RemoteYamEnvWorker only supports env.train.env_type=remote, got "
                 f"{self.cfg.env.train.env_type!r}."
             )
         if self.enable_eval and str(self.cfg.env.eval.env_type) != "remote":
             raise ValueError(
-                "RobotWorker only supports env.eval.env_type=remote, got "
+                "RemoteYamEnvWorker only supports env.eval.env_type=remote, got "
                 f"{self.cfg.env.eval.env_type!r}."
             )
         if not bool(self.cfg.marl.get("enabled", True)):
-            raise ValueError("RobotWorker requires marl.enabled=true.")
+            raise ValueError("RemoteYamEnvWorker requires marl.enabled=true.")
 
     def _build_marl_run_id(self, stage_id: int) -> str:
         experiment_name = str(
@@ -216,7 +216,7 @@ class RobotWorker(Worker):
             )
         except Exception as exc:  # pragma: no cover - service failure
             self.log_warning(
-                f"[RobotWorker] marl create_image_set failed for stage {stage_id}: {exc}"
+                f"[RemoteYamEnvWorker] marl create_image_set failed for stage {stage_id}: {exc}"
             )
             return False
 
@@ -255,7 +255,7 @@ class RobotWorker(Worker):
 
         if not self.only_eval:
             self.robot_clients = [
-                RemoteRobotClient(
+                RobotServerClient(
                     cfg=self.cfg.env.train,
                     num_envs=self.train_num_envs_per_stage,
                     worker_info=self.worker_info,
@@ -264,7 +264,7 @@ class RobotWorker(Worker):
             ]
         if self.enable_eval:
             self.eval_robot_clients = [
-                RemoteRobotClient(
+                RobotServerClient(
                     cfg=self.cfg.env.eval,
                     num_envs=self.eval_num_envs_per_stage,
                     worker_info=self.worker_info,
@@ -281,7 +281,7 @@ class RobotWorker(Worker):
         )
         if bool(self._marl_cfg.get("healthcheck", True)):
             self._marl_client.healthz()
-        self.log_info(f"[RobotWorker] marl enabled at {base_url}.")
+        self.log_info(f"[RemoteYamEnvWorker] marl enabled at {base_url}.")
 
         if not self.only_eval:
             self._init_robot_clients()
@@ -308,7 +308,7 @@ class RobotWorker(Worker):
             new_subtask = str(response.get("subtask_text", "")).strip()
         except Exception as exc:  # pragma: no cover - service failure
             self.log_warning(
-                f"[RobotWorker] marl planner request failed: {exc}. "
+                f"[RemoteYamEnvWorker] marl planner request failed: {exc}. "
                 "Keeping current task description."
             )
             return
@@ -321,7 +321,7 @@ class RobotWorker(Worker):
                 f"Planner updated task to: {new_subtask}"
             )
             self.log_info(
-                f"[RobotWorker] Subtask updated for stage {stage_id}: '{new_subtask}'"
+                f"[RemoteYamEnvWorker] Subtask updated for stage {stage_id}: '{new_subtask}'"
             )
 
     def _compute_top_reward(self, env_output: EnvOutput, stage_id: int) -> EnvOutput:
@@ -345,7 +345,7 @@ class RobotWorker(Worker):
             score_t = float(score_response["reward"])
         except Exception as exc:  # pragma: no cover - service failure
             self.log_warning(
-                f"[RobotWorker] marl TOPReward failed for stage {stage_id}: {exc}"
+                f"[RemoteYamEnvWorker] marl TOPReward failed for stage {stage_id}: {exc}"
             )
             return env_output
 
@@ -354,7 +354,7 @@ class RobotWorker(Worker):
         if env_output.rewards is not None:
             env_output.rewards[:, -1] = reward
         self.log_info(
-            f"[RobotWorker] marl TOPReward: score={score_t:.4f}, delta={reward:.4f}"
+            f"[RemoteYamEnvWorker] marl TOPReward: score={score_t:.4f}, delta={reward:.4f}"
         )
         return env_output
 
@@ -760,11 +760,11 @@ class RobotWorker(Worker):
         task_descriptions = obs.get("task_descriptions", None)
         if not task_descriptions:
             self.log_info(
-                f"[RobotWorker] Rollout obs stage={stage_id} phase={phase} has no task_descriptions."
+                f"[RemoteYamEnvWorker] Rollout obs stage={stage_id} phase={phase} has no task_descriptions."
             )
             return
         self.log_info(
-            f"[RobotWorker] Rollout obs stage={stage_id} phase={phase} "
+            f"[RemoteYamEnvWorker] Rollout obs stage={stage_id} phase={phase} "
             f"task={task_descriptions[0]!r}"
         )
 

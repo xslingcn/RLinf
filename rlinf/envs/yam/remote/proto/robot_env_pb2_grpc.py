@@ -3,9 +3,9 @@
 import grpc
 import warnings
 
-from rlinf.envs.remote.proto import robot_env_pb2 as rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2
+from rlinf.envs.yam.remote.proto import robot_env_pb2 as rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2
 
-GRPC_GENERATED_VERSION = '1.78.0'
+GRPC_GENERATED_VERSION = '1.80.0rc1'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in rlinf/envs/remote/proto/robot_env_pb2_grpc.py depends on'
+        + ' but the generated code in rlinf/envs/yam/remote/proto/robot_env_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,33 +36,33 @@ class RobotEnvServiceStub(object):
         """
         self.GetSpaces = channel.unary_unary(
                 '/robot_env.RobotEnvService/GetSpaces',
-                request_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
-                response_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.SpacesResponse.FromString,
+                request_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+                response_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.SpacesResponse.FromString,
                 _registered_method=True)
         self.Reset = channel.unary_unary(
                 '/robot_env.RobotEnvService/Reset',
-                request_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ResetRequest.SerializeToString,
-                response_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Observation.FromString,
+                request_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ResetRequest.SerializeToString,
+                response_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Observation.FromString,
                 _registered_method=True)
         self.ChunkStep = channel.unary_unary(
                 '/robot_env.RobotEnvService/ChunkStep',
-                request_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepRequest.SerializeToString,
-                response_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepResponse.FromString,
+                request_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepRequest.SerializeToString,
+                response_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepResponse.FromString,
                 _registered_method=True)
         self.SetTaskDescription = channel.unary_unary(
                 '/robot_env.RobotEnvService/SetTaskDescription',
-                request_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.TaskDescriptionRequest.SerializeToString,
-                response_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+                request_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.TaskDescriptionRequest.SerializeToString,
+                response_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
                 _registered_method=True)
         self.EnterZeroTorqueMode = channel.unary_unary(
                 '/robot_env.RobotEnvService/EnterZeroTorqueMode',
-                request_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
-                response_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+                request_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+                response_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
                 _registered_method=True)
         self.Close = channel.unary_unary(
                 '/robot_env.RobotEnvService/Close',
-                request_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
-                response_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+                request_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+                response_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
                 _registered_method=True)
 
 
@@ -116,33 +116,33 @@ def add_RobotEnvServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'GetSpaces': grpc.unary_unary_rpc_method_handler(
                     servicer.GetSpaces,
-                    request_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
-                    response_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.SpacesResponse.SerializeToString,
+                    request_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+                    response_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.SpacesResponse.SerializeToString,
             ),
             'Reset': grpc.unary_unary_rpc_method_handler(
                     servicer.Reset,
-                    request_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ResetRequest.FromString,
-                    response_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Observation.SerializeToString,
+                    request_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ResetRequest.FromString,
+                    response_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Observation.SerializeToString,
             ),
             'ChunkStep': grpc.unary_unary_rpc_method_handler(
                     servicer.ChunkStep,
-                    request_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepRequest.FromString,
-                    response_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepResponse.SerializeToString,
+                    request_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepRequest.FromString,
+                    response_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepResponse.SerializeToString,
             ),
             'SetTaskDescription': grpc.unary_unary_rpc_method_handler(
                     servicer.SetTaskDescription,
-                    request_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.TaskDescriptionRequest.FromString,
-                    response_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+                    request_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.TaskDescriptionRequest.FromString,
+                    response_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
             ),
             'EnterZeroTorqueMode': grpc.unary_unary_rpc_method_handler(
                     servicer.EnterZeroTorqueMode,
-                    request_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
-                    response_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+                    request_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+                    response_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
             ),
             'Close': grpc.unary_unary_rpc_method_handler(
                     servicer.Close,
-                    request_deserializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
-                    response_serializer=rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+                    request_deserializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+                    response_serializer=rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -170,8 +170,8 @@ class RobotEnvService(object):
             request,
             target,
             '/robot_env.RobotEnvService/GetSpaces',
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.SpacesResponse.FromString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.SpacesResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -197,8 +197,8 @@ class RobotEnvService(object):
             request,
             target,
             '/robot_env.RobotEnvService/Reset',
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ResetRequest.SerializeToString,
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Observation.FromString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ResetRequest.SerializeToString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Observation.FromString,
             options,
             channel_credentials,
             insecure,
@@ -224,8 +224,8 @@ class RobotEnvService(object):
             request,
             target,
             '/robot_env.RobotEnvService/ChunkStep',
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepRequest.SerializeToString,
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepResponse.FromString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepRequest.SerializeToString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.ChunkStepResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -251,8 +251,8 @@ class RobotEnvService(object):
             request,
             target,
             '/robot_env.RobotEnvService/SetTaskDescription',
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.TaskDescriptionRequest.SerializeToString,
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.TaskDescriptionRequest.SerializeToString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,
@@ -278,8 +278,8 @@ class RobotEnvService(object):
             request,
             target,
             '/robot_env.RobotEnvService/EnterZeroTorqueMode',
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,
@@ -305,8 +305,8 @@ class RobotEnvService(object):
             request,
             target,
             '/robot_env.RobotEnvService/Close',
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
-            rlinf_dot_envs_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.SerializeToString,
+            rlinf_dot_envs_dot_yam_dot_remote_dot_proto_dot_robot__env__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,

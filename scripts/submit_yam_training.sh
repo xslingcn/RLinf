@@ -10,7 +10,7 @@
 #   GPU 0 — actor (FSDP training)
 #   GPU 1 — rollout (inference)
 #   GPU 2 — marl sidecar (TOPReward scoring; + subtask planning for the topreward variant)
-#   CPU   — RobotWorker (RemoteRobotClient via gRPC to the robot server)
+#   CPU   — RemoteYamEnvWorker (RobotServerClient via gRPC to the robot server)
 #
 # The robot server runs on the local desktop with a reverse SSH tunnel
 # to the Beaker head node.

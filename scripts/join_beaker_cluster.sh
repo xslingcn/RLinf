@@ -7,7 +7,7 @@
 #   2. This script joins the cluster from the desktop and runs training locally.
 #
 # NOTE: The canonical YAM configs (yam_ppo_openpi, yam_ppo_openpi_topreward) use
-# train_embodied_agent_marl.py with RobotWorker + RemoteRobotClient and
+# train_embodied_agent_marl.py with RemoteYamEnvWorker + RobotServerClient and
 # cluster.num_nodes: 1. For those configs, use submit_yam_training.sh instead —
 # it runs everything on Beaker.
 #

@@ -28,7 +28,7 @@ import argparse
 import cv2
 import numpy as np
 
-from rlinf.envs.remote.proto import robot_env_pb2, robot_env_pb2_grpc
+from rlinf.envs.yam.remote.proto import robot_env_pb2, robot_env_pb2_grpc
 
 _MAX_MSG = 16 * 1024 * 1024
 

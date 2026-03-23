@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Remote robot gRPC client for the desktop RobotServer."""
+"""RobotServer gRPC client for the desktop remote robot runtime."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ import numpy as np
 import torch
 from omegaconf import DictConfig
 
-from rlinf.envs.remote.proto import robot_env_pb2, robot_env_pb2_grpc
+from rlinf.envs.yam.remote.proto import robot_env_pb2, robot_env_pb2_grpc
 from rlinf.envs.utils import to_tensor
 from rlinf.scheduler import WorkerInfo
 from rlinf.utils.logging import get_logger
@@ -93,7 +93,7 @@ def _proto_to_obs(proto_obs: robot_env_pb2.Observation) -> dict:
     return obs
 
 
-class RemoteRobotClient:
+class RobotServerClient:
     """Thin gRPC client for the desktop RobotServer."""
 
     def __init__(
@@ -103,7 +103,7 @@ class RemoteRobotClient:
         worker_info: Optional[WorkerInfo] = None,
     ) -> None:
         assert num_envs == 1, (
-            f"RemoteRobotClient supports exactly 1 environment, got {num_envs}."
+            f"RobotServerClient supports exactly 1 environment, got {num_envs}."
         )
         self._logger = get_logger()
         self.cfg = cfg
@@ -118,7 +118,7 @@ class RemoteRobotClient:
             ("grpc.max_send_message_length", max_msg),
             ("grpc.max_receive_message_length", max_msg),
         ]
-        self._logger.info(f"[RemoteRobotClient] Connecting to server at {server_url}")
+        self._logger.info(f"[RobotServerClient] Connecting to server at {server_url}")
         self._channel = grpc.insecure_channel(server_url, options=channel_options)
         self._stub = robot_env_pb2_grpc.RobotEnvServiceStub(self._channel)
 
@@ -139,7 +139,7 @@ class RemoteRobotClient:
                     raise
                 wait = min(retry_interval, remaining)
                 self._logger.info(
-                    "[RemoteRobotClient] Server not ready at %s, retrying in %.0fs "
+                    "[RobotServerClient] Server not ready at %s, retrying in %.0fs "
                     "(%.0fs remaining of %.0fs connect timeout) ...",
                     server_url,
                     wait,
@@ -177,7 +177,7 @@ class RemoteRobotClient:
             )
 
         self._logger.info(
-            "[RemoteRobotClient] Connected. state_dim=%s, action_dim=%s, img=(%s,%s,%s)",
+            "[RobotServerClient] Connected. state_dim=%s, action_dim=%s, img=(%s,%s,%s)",
             self._state_dim,
             self._action_dim,
             self._img_h,

@@ -185,13 +185,13 @@ This exact setup gives:
 - GPU 0: actor
 - GPU 1: rollout
 - GPU 2: `marl`
-- CPU: `RobotWorker` + `RemoteRobotClient`
+- CPU: `RemoteYamEnvWorker` + `RobotServerClient`
 - desktop: `RobotServer` + optional follower servers
 
 The runtime path is:
 
 ```text
-OpenPI rollout -> RobotWorker -> RemoteRobotClient -> RobotServer -> YAMEnv
+OpenPI rollout -> RemoteYamEnvWorker -> RobotServerClient -> RobotServer -> YAMEnv
                                  |
                                  +-> marl /image-sets
                                  +-> marl /topreward
@@ -259,6 +259,6 @@ This validates:
 - `obs -> marl /topreward`
 - `obs -> marl /plan`
 - `subtask -> next VLA input`
-- `action -> RemoteRobotClient -> RobotServer -> YAMEnv`
+- `action -> RobotServerClient -> RobotServer -> YAMEnv`
 
 It does not guarantee numerically healthy actor updates.

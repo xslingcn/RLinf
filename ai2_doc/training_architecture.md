@@ -143,7 +143,7 @@ Quick mapping from architecture terms to code locations:
 | **Frame buffer** | Episode frame buffer `_episode_frames` in `EnvWorker` | `rlinf/workers/env/env_worker.py` — NOT a standalone Ray actor; frames are buffered in-process before each TOPReward call |
 | **Rollout worker** | `MultiStepRolloutWorker` | `rlinf/workers/rollout/hf/huggingface_worker.py` |
 | **Actor / Train** | `EmbodiedFSDPActor` | `rlinf/workers/actor/fsdp_actor_worker.py` |
-| **YAMEnv / Robot server** | `YAMEnv` wrapped by `RobotServer` | `rlinf/envs/yam/yam_env.py`, `rlinf/envs/remote/robot_server.py` |
+| **YAMEnv / Robot server** | `YAMEnv` wrapped by `RobotServer` | `rlinf/envs/yam/yam_env.py`, `rlinf/envs/yam/remote/robot_server.py` |
 
 ## Implementation Notes
 

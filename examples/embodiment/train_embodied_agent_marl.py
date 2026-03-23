@@ -21,14 +21,14 @@ import torch.multiprocessing as mp
 from omegaconf.omegaconf import OmegaConf
 
 from rlinf.config import validate_cfg
-from rlinf.envs.remote.simulated_desktop import (
+from rlinf.envs.yam.remote.simulated_desktop import (
     launch_simulated_desktop_server,
     stop_process,
 )
 from rlinf.runners.embodied_runner import EmbodiedRunner
 from rlinf.scheduler import Cluster
 from rlinf.utils.placement import HybridComponentPlacement
-from rlinf.workers.robot.robot_worker import RobotWorker
+from rlinf.workers.env.remote_yam_env_worker import RemoteYamEnvWorker
 from rlinf.workers.rollout.hf.huggingface_worker import MultiStepRolloutWorker
 
 mp.set_start_method("spawn", force=True)
@@ -72,7 +72,7 @@ def main(cfg) -> None:
         )
 
         env_placement = component_placement.get_strategy("env")
-        env_group = RobotWorker.create_group(cfg).launch(
+        env_group = RemoteYamEnvWorker.create_group(cfg).launch(
             cluster, name=cfg.env.group_name, placement_strategy=env_placement
         )
 

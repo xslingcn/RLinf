@@ -11,7 +11,7 @@
 #   GPU 0 – actor (π₀.5 FSDP training with value head)
 #   GPU 1 – rollout (π₀.5 inference)
 #   GPU 2 – marl sidecar (planner / TOPReward service)
-#   CPU   – RobotWorker (RemoteRobotClient → desktop RobotServer)
+#   CPU   – RemoteYamEnvWorker (RobotServerClient → desktop RobotServer)
 #
 # Desktop:
 #   RobotServer wrapping YAMEnv, exposed via reverse SSH tunnel on :50051.
@@ -52,7 +52,7 @@ cluster:
       placement: 1   # π₀.5 requires a dedicated GPU; cannot share GPU 0 with actor
     env:
       node_group: "gpu"
-      placement: 0   # RobotWorker runs CPU-only; placement on same node
+      placement: 0   # RemoteYamEnvWorker runs CPU-only; placement on same node
   node_groups:
     - label: "gpu"
       node_ranks: 0
@@ -129,7 +129,7 @@ env:
   group_name: "EnvGroup"
   # Optional local simulation of the robot desktop input path.
   # When enabled, train_embodied_agent_marl.py starts a local dummy
-  # RobotServer automatically, so RobotWorker still talks over gRPC but no
+  # RobotServer automatically, so RemoteYamEnvWorker still talks over gRPC but no
   # separate desktop machine or reverse SSH tunnel is required.
   #
   # Keep env.train.remote_server_url / env.eval.remote_server_url pointed at
@@ -149,7 +149,7 @@ env:
     task_description: "bimanual pick and place"
 
     # Dummy mode: controlled at the ROBOT SERVER, not here.
-    # RobotWorker does not read is_dummy — it proxies calls over gRPC to the server.
+    # RemoteYamEnvWorker does not read is_dummy — it proxies calls over gRPC to the server.
     # To test without real hardware, start the robot server with --dummy:
     #   bash scripts/start_robot_server.sh --config .../yam_pi05_follower.yaml --dummy
 

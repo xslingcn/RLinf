@@ -11,3 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from rlinf.workers.env.async_env_worker import AsyncEnvWorker
+from rlinf.workers.env.env_worker import EnvWorker
+from rlinf.workers.env.remote_yam_env_worker import RemoteYamEnvWorker
+
+__all__ = ["EnvWorker", "AsyncEnvWorker", "RemoteYamEnvWorker"]

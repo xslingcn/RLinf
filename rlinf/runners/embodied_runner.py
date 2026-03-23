@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from rlinf.workers.actor.fsdp_sac_policy_worker import EmbodiedSACFSDPPolicy
     from rlinf.workers.env.async_env_worker import AsyncEnvWorker
     from rlinf.workers.env.env_worker import EnvWorker
+    from rlinf.workers.env.remote_yam_env_worker import RemoteYamEnvWorker
     from rlinf.workers.rollout.hf.async_huggingface_worker import (
         AsyncMultiStepRolloutWorker,
     )
@@ -51,7 +52,7 @@ class EmbodiedRunner:
             "EmbodiedFSDPActor", "EmbodiedSACFSDPPolicy", "AsyncEmbodiedSACFSDPPolicy"
         ],
         rollout: Union["MultiStepRolloutWorker", "AsyncMultiStepRolloutWorker"],
-        env: Union["EnvWorker", "AsyncEnvWorker"],
+        env: Union["EnvWorker", "AsyncEnvWorker", "RemoteYamEnvWorker"],
         critic=None,
         reward=None,
         run_timer=None,

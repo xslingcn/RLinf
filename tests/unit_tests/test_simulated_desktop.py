@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 from omegaconf import OmegaConf
 
-from rlinf.envs.remote.simulated_desktop import (
+from rlinf.envs.yam.remote.simulated_desktop import (
     build_simulated_desktop_server_spec,
     parse_host_port,
 )

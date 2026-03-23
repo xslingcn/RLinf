@@ -1,4 +1,4 @@
-# Copyright 2025 The RLinf Authors.
+# Copyright 2026 Shirui Chen
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from rlinf.envs.yam.remote.proto import robot_env_pb2, robot_env_pb2_grpc
 
-from rlinf.envs.yam.yam_env import YAMEnv
-
-__all__ = ["YAMEnv"]
+__all__ = ["robot_env_pb2", "robot_env_pb2_grpc"]

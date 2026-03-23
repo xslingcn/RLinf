@@ -189,7 +189,7 @@ port forward, traffic flows bidirectionally through the single SSH connection.
 
 Communication between `RemoteEnv` (client) and `RobotServer` (server) uses
 gRPC with Protocol Buffers. The proto definition lives at
-`rlinf/envs/remote/proto/robot_env.proto`.
+`rlinf/envs/yam/remote/proto/robot_env.proto`.
 
 For `remote_yam.yaml` Hydra config details (`grpc_timeout`, `auto_reset`,
 `task_description`, etc.), see [training_architecture: Hydra Config](training_architecture.md#hydra-config-remote_yam).
@@ -406,7 +406,7 @@ bash scripts/start_robot_server.sh \
 
 1. Resets all CAN interfaces (`YAM/yam_realtime/.../reset_all_can.sh`) — safe
    no-op when no CAN interfaces are present (dummy mode or non-robot machine)
-2. Starts `python -m rlinf.envs.remote.robot_server --config-path <config> --port <port>` in background
+2. Starts `python -m rlinf.envs.yam.remote.robot_server --config-path <config> --port <port>` in background
 3. Unless `--no-tunnel` is set, starts an `autossh` reverse tunnel:
    ```bash
    autossh -M 0 -N \

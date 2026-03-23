@@ -24,7 +24,7 @@ In the current RLinf implementation, Async PPO is only available for embodied ta
 - Runner: ``rlinf/runners/async_ppo_embodied_runner.py``
 - Actor worker: ``rlinf/workers/actor/async_ppo_fsdp_worker.py``
 - Rollout worker: ``rlinf/workers/rollout/hf/async_huggingface_worker.py``
-- Environment worker: ``rlinf/workers/env/async_env_worker.py``
+- Environment worker: ``rlinf/workers/execution/async_env_worker.py``
 
 The current implementation also has several explicit constraints:
 

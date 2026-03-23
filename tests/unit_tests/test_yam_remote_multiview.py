@@ -19,7 +19,7 @@ import numpy as np
 from omegaconf import OmegaConf
 
 from rlinf.envs.remote.remote_env import _proto_to_obs
-from rlinf.envs.remote.robot_server import RobotEnvServicer, _obs_to_proto
+from rlinf.envs.yam.remote.robot_server import RobotEnvServicer, _obs_to_proto
 from rlinf.envs.yam.yam_env import YAMEnv
 
 
