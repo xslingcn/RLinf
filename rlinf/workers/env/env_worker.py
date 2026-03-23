@@ -66,10 +66,9 @@ class EnvWorker(Worker):
         self._subtask_interval: int = int(self.cfg.env.train.get("subtask_interval", 0))
         self._steps_since_subtask_update: int = 0
         self._vlm_planner = None  # set via set_vlm_planner() after construction
-        self._initial_task_descriptions: list[str] = [
-            str(self.cfg.env.train.get("task_description", ""))
-            for _ in range(self.stage_num)
-        ]
+        self._main_task_description: str = str(
+            self.cfg.env.train.get("task_description", "")
+        )
 
         # TOPReward dense reward state
         self._top_reward_enabled: bool = bool(
@@ -215,7 +214,7 @@ class EnvWorker(Worker):
         memory_ref = self._vlm_planner.get_memory_text.remote()
         memory = ray.get(memory_ref)
 
-        main_task = self._initial_task_descriptions[stage_id].strip()
+        main_task = self._main_task_description.strip()
         if not main_task:
             raise ValueError(
                 "Subtask planning requires a non-empty env.train.task_description."
