@@ -23,7 +23,7 @@ runner:
     log_path: "../results"
     project_name: rlinf
     experiment_name: "robotwin_grpo_openvlaoft"
-    logger_backends: ["tensorboard"] # wandb, swanlab
+    logger_backends: ["tensorboard"] # wandb
 
   max_epochs: 1000
   max_steps: -1

@@ -59,7 +59,7 @@ cd docs && make html
 
 ## Architecture
 
-RLinf is a distributed RL infrastructure for embodied and agentic AI, built on **Ray** (process management) and **Hydra** (configuration).
+RLinf is a distributed embodied RL infrastructure built on **Ray** (process management) and **Hydra** (configuration).
 
 ### Execution Flow
 
@@ -75,9 +75,9 @@ RLinf is a distributed RL infrastructure for embodied and agentic AI, built on *
 | `config.py` | `build_config` / `validate_cfg`; `SupportedModel`, `SupportedEnvType` enums |
 | `scheduler/` | Cluster, Worker, WorkerGroup, channel, manager, placement, dynamic_scheduler |
 | `workers/` | Actor (FSDP/Megatron), rollout (HF/SGLang/vLLM), env (sync/async), reward, replay buffer |
-| `runners/` | Training loop drivers: embodied, reasoning, coding_online_rl, agent, SFT, eval |
-| `algorithms/` | Advantage functions, policy losses, reward registry (PPO, GRPO, SAC, etc.) |
-| `models/` | Embodiment models (OpenVLA, π₀, GR00T, MLP/CNN/Flow) and reasoning wiring |
+| `runners/` | Training loop drivers: embodied, async embodied, eval |
+| `algorithms/` | Advantage functions, policy losses, reward registry (PPO, SAC, etc.) |
+| `models/` | Embodiment models (OpenVLA, π₀, GR00T, MLP/CNN/Flow) |
 | `envs/` | Env integrations; `get_env_cls()` in `envs/__init__.py` is the dispatch point |
 | `hybrid_engines/` | SGLang/vLLM rollout integration |
 | `utils/` | Logging, placement, distributed training, checkpoint, resharding |

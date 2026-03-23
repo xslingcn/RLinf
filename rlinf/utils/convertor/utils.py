@@ -622,10 +622,9 @@ class Qwen3MoEConvertor(Qwen3BaseConvertor):
 
 
 _MG2HF_CONVERTOR_REGISTRY = {
-    SupportedModel.QWEN2_5: Qwen25Convertor,
-    SupportedModel.QWEN2_5_VL: Qwen25VLConvertor,
-    SupportedModel.QWEN3: Qwen3DenseConvertor,
-    SupportedModel.QWEN3_MOE: Qwen3MoEConvertor,
+    SupportedModel.QWEN2_5_VL_SFT: Qwen25VLConvertor,
+    SupportedModel.QWEN3_VL_SFT: Qwen3DenseConvertor,
+    SupportedModel.QWEN3_VL_MOE_SFT: Qwen3MoEConvertor,
 }
 
 

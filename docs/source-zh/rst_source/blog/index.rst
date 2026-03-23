@@ -10,4 +10,3 @@
    :maxdepth: 1
 
    compare_with_verl
-   build_a_coding_online_rl_case

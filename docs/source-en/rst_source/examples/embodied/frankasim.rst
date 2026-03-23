@@ -115,9 +115,9 @@ Run experiments using the official Docker image:
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-frankasim
+      rlinf/rlinf:embodied-frankasim
       # For faster Docker pulls in mainland China (optional):
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-frankasim
+      # docker.1ms.run/rlinf/rlinf:embodied-frankasim
 
 Option 2: Custom environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -291,7 +291,7 @@ Video generation is currently supported only in ``PandaPickCubeVision-v0``:
        log_path: "../results"
        project_name: rlinf
        experiment_name: "maniskill_ppo_openvla"
-       logger_backends: ["tensorboard"]  # wandb, swanlab
+       logger_backends: ["tensorboard"]  # wandb
 
 Simulation Results
 ~~~~~~~~~~~~~~~~~~~

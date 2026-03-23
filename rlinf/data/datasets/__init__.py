@@ -21,10 +21,7 @@ from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
 from rlinf.data.datasets.item import DatasetItem
-from rlinf.data.datasets.reasoning import ReasoningDataset
-from rlinf.data.datasets.rstar2 import Rstar2Dataset
 from rlinf.data.datasets.vlm import VLMDatasetRegistry
-from rlinf.data.datasets.wideseek_r1 import WideSeekR1Dataset
 
 
 def create_rl_dataset(
@@ -42,33 +39,7 @@ def create_rl_dataset(
         val_dataset (Dataset): The validation dataset.
     """
 
-    dataset_type_map = {
-        "reasoning": ReasoningDataset,
-        "math": ReasoningDataset,
-        "wideseek_r1": WideSeekR1Dataset,
-        "rstar2": Rstar2Dataset,
-    }
-    if config.data.type in dataset_type_map:
-        datast_cls = dataset_type_map[config.data.type]
-        logging.info(f"Using dataset class: {datast_cls.__name__}")
-
-        train_dataset, val_dataset = None, None
-        if config.runner.task_type != "reasoning_eval":
-            train_dataset = datast_cls(
-                data_paths=config.data.train_data_paths,
-                config=config,
-                tokenizer=tokenizer,
-            )
-
-        if config.data.get("val_data_paths", None) is not None:
-            val_dataset = datast_cls(
-                data_paths=config.data.val_data_paths,
-                config=config,
-                tokenizer=tokenizer,
-            )
-
-        return train_dataset, val_dataset
-    elif config.data.type == "vision_language":
+    if config.data.type == "vision_language":
         # Prefer new factory-based VLM datasets; fallback to legacy if requested
         dataset_name = getattr(config.data, "dataset_name", None)
         lazy_loading = bool(getattr(config.data, "lazy_loading", False))
@@ -92,7 +63,7 @@ def create_rl_dataset(
         return train_dataset, val_dataset
     else:
         raise NotImplementedError(
-            f"Unsupported dataset type {config.data.type}, only support ['math', 'vision_language', 'robot_demo']"
+            f"Unsupported dataset type {config.data.type}, only support ['vision_language']"
         )
 
 

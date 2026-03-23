@@ -24,7 +24,7 @@ runner:
     log_path: "../results"
     project_name: rlinf
     experiment_name: "libero_spatial_0_grpo_mlp"
-    logger_backends: ["tensorboard"] # wandb, swanlab
+    logger_backends: ["tensorboard"] # wandb
 
   max_epochs: 1
   max_steps: -1

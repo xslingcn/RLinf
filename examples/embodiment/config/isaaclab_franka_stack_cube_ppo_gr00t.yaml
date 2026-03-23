@@ -40,7 +40,7 @@ runner:
     log_path: "../results"
     project_name: rlinf
     experiment_name: "isaaclab_ppo_gr00t_demo"
-    logger_backends: ["tensorboard"] # wandb, swanlab
+    logger_backends: ["tensorboard"] # wandb
 
   max_epochs: 1000
   max_steps: -1

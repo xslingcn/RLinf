@@ -14,11 +14,6 @@ custom metrics to one or more of the following backends:
   A SaaS-based platform offering experiment tracking, hyperparameter sweeps, 
   artifacts (for model and data versioning), reporting, and collaborative features for teams. 
 
-- `SwanLab <https://pypi.org/project/swanlab/>`_:
-  An open-source, lightweight experiment logging and visualization tool designed for local or self-hosted use. 
-  It provides intuitive Python APIs, logs metrics, hyperparameters, hardware and code info, 
-  and supports experiment comparison through a clean UI — ideal for privacy-focused workflows. 
-
 Enabling a back-end
 -------------------
 
@@ -32,7 +27,7 @@ Add the desired logger(s) to ``runner.logger.logger_backends`` in your YAML:
        log_path: ${runner.output_dir}/${runner.experiment_name}
        project_name: rlinf
        experiment_name: ${runner.experiment_name}
-       logger_backends: ["tensorboard", "wandb", "swanlab"]   # <─ choose any subset
+       logger_backends: ["tensorboard", "wandb"]   # <─ choose any subset
      experiment_name: grpo-1.5b
      output_dir: ./logs
 
@@ -44,7 +39,6 @@ RLinf creates a sub-directory for each active back-end:
    ├── checkpoints/
    ├── converted_ckpts/
    ├── log/                
-   ├── swanlab/            # SwanLab event files
    ├── tensorboard/        # TensorBoard event files
    └── wandb/              # WandB run directory
 
@@ -76,23 +70,6 @@ From now on RLinf will automatically start a new *run* and stream all
 metrics. You can check the metrics through your dashboard.
 
 
-SwanLab
--------
-
-
-#. Register at `swanlab.ai <https://swanlab.ai>`__ and obtain an
-   *access token*.
-#. Authenticate:
-
-.. code-block:: bash
-
-    swanlab login        # paste access token
-
-From now on RLinf will automatically start a new *run* and stream all
-metrics. You can check the metrics through your dashboard.
-
-
 .. tip::
 
-   All three loggers run **in parallel**; feel free to mix and match.
-
+   Both loggers can run **in parallel**; feel free to mix and match.

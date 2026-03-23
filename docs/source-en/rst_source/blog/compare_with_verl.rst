@@ -219,7 +219,7 @@ Rollout and Inference Configuration
 Training Control Parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- ``trainer.logger``: **Logging backends** - Available options: ``["wandb", "mlflow", "swanlab", "vemlp_wandb", "tensorboard", "console", "clearml"]``
+- ``trainer.logger``: **Logging backends** - Available options: ``["wandb", "mlflow", "vemlp_wandb", "tensorboard", "console", "clearml"]``
 - ``trainer.project_name``: Project name for experiment tracking
 - ``trainer.experiment_name``: Specific experiment identifier
 - ``trainer.n_gpus_per_node``: Number of GPUs per compute node

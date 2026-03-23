@@ -68,7 +68,7 @@ runner
       log_path: ${runner.output_dir}/${runner.experiment_name}
       project_name: rlinf
       experiment_name: ${runner.experiment_name}
-      logger_backends: ["tensorboard"] # wandb, swanlab
+      logger_backends: ["tensorboard"] # wandb
 
     max_epochs: 5
     max_steps: -1
@@ -92,7 +92,7 @@ runner
 
 ``runner.logger.experiment_name``：实验名称。  
 
-``runner.logger.logger_backends``：日志后端（tensorboard、wandb、swanlab）。
+``runner.logger.logger_backends``：日志后端（tensorboard、wandb）。
 
 关于日志后端详见 :doc:`../advance/logger`。
 

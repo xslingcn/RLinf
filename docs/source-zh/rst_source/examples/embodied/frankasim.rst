@@ -112,9 +112,9 @@ Franka-Sim 环境基于项目 `serl <https://rail-berkeley.github.io/serl/docs/s
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-frankasim
+      rlinf/rlinf:embodied-frankasim
       # 如果需要国内加速下载镜像，可以使用：
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-frankasim
+      # docker.1ms.run/rlinf/rlinf:embodied-frankasim
 
 选项 2：自定义环境
 ^^^^^^^^^^^^^^^^^^
@@ -288,7 +288,7 @@ Rollout 指标
        log_path: "../results"
        project_name: rlinf
        experiment_name: "maniskill_ppo_openvla"
-       logger_backends: ["tensorboard"]  # wandb, swanlab
+       logger_backends: ["tensorboard"]  # wandb
 
 仿真结果
 ~~~~~~~~~~~~~~~~~~~

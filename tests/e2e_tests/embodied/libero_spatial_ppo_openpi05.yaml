@@ -23,7 +23,7 @@ runner:
     log_path: "../results/libero_spatial_ppo_openpi05"
     project_name: rlinf
     experiment_name: "test_openpi"
-    logger_backends: ["tensorboard"] # wandb, swanlab
+    logger_backends: ["tensorboard"] # wandb
 
   max_epochs: 1
   max_steps: -1

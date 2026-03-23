@@ -166,9 +166,9 @@ RLinf provides a pre-configured RoboTwin environment Docker image that includes 
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-robotwin
+      rlinf/rlinf:embodied-robotwin
       # If you need to download the image faster in China, you can use:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-robotwin
+      # docker.1ms.run/rlinf/rlinf:embodied-robotwin
 
 .. note::
    The Docker image includes:

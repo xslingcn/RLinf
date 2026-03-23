@@ -32,7 +32,7 @@ class _TensorboardLogger:
 
 
 class MetricLogger:
-    supported_logger = ["wandb", "swanlab", "tensorboard"]
+    supported_logger = ["wandb", "tensorboard"]
 
     def __init__(self, cfg: DictConfig):
         self.cfg = cfg
@@ -55,7 +55,6 @@ class MetricLogger:
             self.logger_backends = logger_backends
 
         self.wandb_proxy = logger_cfg.get("wandb_proxy", None)
-        self.swanlab_mode = logger_cfg.get("swanlab_mode", "cloud")
         if len(self.logger_backends) > 0:
             assert all(
                 backend in self.supported_logger for backend in self.logger_backends
@@ -92,21 +91,6 @@ class MetricLogger:
                 reinit=True,
             )
             logger["wandb"] = wandb
-
-        if "swanlab" in self.logger_backends:
-            import swanlab
-
-            swanlab_log_path = os.path.join(log_path, "swanlab", log_path_suffix)
-            os.makedirs(swanlab_log_path, exist_ok=True)
-
-            swanlab.init(
-                project=self.project_name,
-                experiment_name=experiment_name,
-                config=self.config,
-                logdir=swanlab_log_path,
-                mode=self.swanlab_mode,
-            )
-            logger["swanlab"] = swanlab
 
         if "tensorboard" in self.logger_backends:
             tensorboard_log_path = os.path.join(

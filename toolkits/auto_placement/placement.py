@@ -50,18 +50,12 @@ class ScheduleResult(ABC):
 
         config = get_global_config()
 
-        # In Reasoning task, hybrid schedule is not supported.
-        if config.task_type == "reasoning" and res.is_hybrid():
+        nodes = list(res.placement.keys())
+        if (
+            nodes[-1].role == "actor"
+            and len(res.placement[nodes[-1]]) != res.total_gpu_num
+        ):
             return None
-
-        # In Embodiment task, actor should run on all GPUs.
-        if config.task_type == "embodied":
-            nodes = list(res.placement.keys())
-            if (
-                nodes[-1].role == "actor"
-                and len(res.placement[nodes[-1]]) != res.total_gpu_num
-            ):
-                return None
         return res
 
     @staticmethod

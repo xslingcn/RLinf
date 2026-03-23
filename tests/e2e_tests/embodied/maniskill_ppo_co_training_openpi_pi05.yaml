@@ -23,7 +23,7 @@ runner:
     log_path: /workspace/results/maniskill_ppo_co_training_openpi_pi05
     project_name: rlinf
     experiment_name: "ci-test"
-    logger_backends: null # ['tensorboard', 'wandb', 'swanlab']
+    logger_backends: null # ['tensorboard', 'wandb']
 
   max_epochs: 1
   max_steps: -1

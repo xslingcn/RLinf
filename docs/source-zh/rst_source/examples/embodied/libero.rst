@@ -93,9 +93,9 @@
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      rlinf/rlinf:embodied-maniskill_libero
       # 如果需要国内加速下载镜像，可以使用：
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      # docker.1ms.run/rlinf/rlinf:embodied-maniskill_libero
 
 请通过镜像内置的 `switch_env` 工具切换到对应的虚拟环境：
 
@@ -270,7 +270,7 @@
          log_path: "../results"
          project_name: rlinf
          experiment_name: "libero_10_grpo_openvlaoft"
-         logger_backends: ["tensorboard"] # wandb, swanlab
+         logger_backends: ["tensorboard"] # wandb
 
 LIBERO 结果
 ~~~~~~~~~~~~~~~~~~~

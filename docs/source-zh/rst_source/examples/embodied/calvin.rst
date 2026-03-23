@@ -95,9 +95,9 @@
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-calvin
+      rlinf/rlinf:embodied-calvin
       # 为了提高国内下载速度，也可以使用：
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-calvin
+      # docker.1ms.run/rlinf/rlinf:embodied-calvin
 
 请使用内置的 `switch_env` 工具切换到相应的虚拟环境：
 
@@ -273,7 +273,7 @@ CALVIN D 任务上训练配置文件：
        log_path: "../results"
        project_name: rlinf
        experiment_name: "calvin_d_d_ppo_openpi_pi05"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 
 CALVIN 结果

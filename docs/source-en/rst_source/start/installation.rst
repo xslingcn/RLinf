@@ -1,10 +1,7 @@
 Installation
 ============
 
-RLinf supports multiple backend engines for both training and inference. As of now, the following configurations are available:
-
-- **Megatron** and **SGLang/vLLM** for training LLMs on MATH tasks.
-- **FSDP** and **Huggingface** for training VLAs on LIBERO and ManiSkill3.
+RLinf supports the backend engines required by the embodied training stack used in this repository.
 
 Backend Engines
 ---------------
@@ -13,11 +10,7 @@ Backend Engines
 
    - **FSDP**: A simple and efficient training engine that is beginner-friendly, widely compatible, easy to use, and supports native PyTorch modules.
 
-   - **Megatron**: Designed for experienced developers seeking maximum performance. It supports a variety of parallel configurations and offers SOTA training speed and scalability.
-
 2. **Inference Engines**
-
-   - **SGLang/vLLM**: A mature and widely adopted inference engine that offers many advanced features and optimizations.
 
    - **Huggingface**: Easy to use, with native APIs provided by the Huggingface ecosystem.
 
@@ -75,15 +68,7 @@ However, if your system is incompatible with the Docker image, you can also inst
 Installation Method 1: Docker Image
 --------------------------------------------------
 
-We provide Docker images for different experiments:
-
-- **Embodied:**
-
-  - ``rlinf/rlinf:agentic-rlinf0.2-maniskill_libero`` for the Libero or ManiSkill benchmarks. For other embodied experiments, please refer to the corresponding sections in :doc:`../examples/index`
-
-- **Math reasoning:** 
-
-  - ``rlinf/rlinf:math-rlinf0.2-torch2.6.0-sglang0.4.6.post5-vllm0.8.5-megatron0.13.0-te2.1`` (used for enhancing LLM reasoning on MATH tasks)
+We provide Docker images for embodied experiments.
 
 
 Once you've identified the appropriate image for your setup, pull the Docker image:
@@ -148,7 +133,6 @@ The script is organized by *targets* and *models*:
 
   Each embodied model also requires an ``--env`` argument to specify the environment, e.g. ``maniskill_libero``, ``behavior`` or ``metaworld``.
 
-- ``reason`` target (for reasoning / Megatron stack).
 - ``docs`` target (for building the documentation).
 
 For example, to install the dependencies for the OpenVLA + ManiSkill LIBERO experiment, run:
@@ -173,12 +157,6 @@ To deactivate the virtual environment, simply run:
 
   deactivate
 
-To install the reasoning (Megatron + SGLang/vLLM) stack instead, run:
-
-.. code-block:: shell
-
-  bash requirements/install.sh agentic
-
 You can override the default virtual environment directory using ``--venv``. For example:
 
 .. code-block:: shell
@@ -201,5 +179,3 @@ Installation as a Library
 RLinf is now available on PyPI for installation via pip as a library. 
 
 - Use `pip install rlinf[embodied]` for embodied RL.
-- Use `pip install rlinf[agentic-sglang]` for agentic RL with SGLang.
-- Use `pip install rlinf[agentic-vllm]` for agentic RL with vLLM.

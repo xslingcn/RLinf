@@ -21,11 +21,11 @@ from rlinf.config import SupportedModel, get_supported_model
 
 def get_tp_reshard_fn(model_type: str):
     model_type = get_supported_model(model_type)
-    if model_type == SupportedModel.QWEN2_5:
+    if model_type == SupportedModel.QWEN2_5_VL_SFT:
         return tp_reshard_fn_qwen2_5
-    elif model_type == SupportedModel.QWEN3:
+    elif model_type == SupportedModel.QWEN3_VL_SFT:
         return tp_reshard_fn_qwen3_dense
-    elif model_type == SupportedModel.QWEN3_MOE:
+    elif model_type == SupportedModel.QWEN3_VL_MOE_SFT:
         return tp_reshard_fn_qwen3_moe
     else:
         raise NotImplementedError(
@@ -35,7 +35,7 @@ def get_tp_reshard_fn(model_type: str):
 
 def get_tpe_reshard_fn(model_type: str):
     model_type = get_supported_model(model_type)
-    if model_type == SupportedModel.QWEN3_MOE:
+    if model_type == SupportedModel.QWEN3_VL_MOE_SFT:
         return tpe_reshard_fn_qwen3_moe
     else:
         raise NotImplementedError(
@@ -45,11 +45,11 @@ def get_tpe_reshard_fn(model_type: str):
 
 def get_pp_reshard_fn(model_type: str):
     model_type = get_supported_model(model_type)
-    if model_type == SupportedModel.QWEN2_5:
+    if model_type == SupportedModel.QWEN2_5_VL_SFT:
         return pp_reshard_fn_qwen2_5
-    elif model_type == SupportedModel.QWEN3:
+    elif model_type == SupportedModel.QWEN3_VL_SFT:
         return pp_reshard_fn_qwen3_dense
-    elif model_type == SupportedModel.QWEN3_MOE:
+    elif model_type == SupportedModel.QWEN3_VL_MOE_SFT:
         return pp_reshard_fn_qwen3_moe
     else:
         raise NotImplementedError(

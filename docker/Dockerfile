@@ -1,10 +1,9 @@
-ARG BUILD_TARGET=reason
+ARG BUILD_TARGET=embodied-maniskill_libero
 
 
 ##################################################################################################
 # Base images for different build targets
 ##################################################################################################
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-reason
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-maniskill_libero
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-behavior-openvlaoft
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-behavior-openpi
@@ -84,17 +83,6 @@ fi
 source ${UV_PATH}/\$1/bin/activate
 EOF
 RUN chmod +x /usr/local/bin/switch_env
-
-
-##################################################################################################
-# Reason image
-##################################################################################################
-FROM base-image AS reason-image
-
-RUN bash requirements/install.sh agentic --venv reason
-
-# Set default env
-RUN echo "source ${UV_PATH}/reason/bin/activate" >> ~/.bashrc
 
 
 ##################################################################################################

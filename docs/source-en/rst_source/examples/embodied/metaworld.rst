@@ -84,9 +84,9 @@ Use Docker image for the experiment.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-metaworld
+      rlinf/rlinf:embodied-metaworld
       # For mainland China users, you can use the following for better download speed:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-metaworld
+      # docker.1ms.run/rlinf/rlinf:embodied-metaworld
 
 Please switch to the corresponding virtual environment via the built-in `switch_env` utility in the image:
 
@@ -273,7 +273,7 @@ Visualization and Results
        log_path: "../results"
        project_name: rlinf
        experiment_name: "metaworld_50_ppo_openpi"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 
 MetaWorld Results

@@ -94,9 +94,9 @@ Use Docker image for the experiment.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-calvin
+      rlinf/rlinf:embodied-calvin
       # For mainland China users, you can use the following for better download speed:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-calvin
+      # docker.1ms.run/rlinf/rlinf:embodied-calvin
 
 Please switch to the corresponding virtual environment via the built-in `switch_env` utility in the image:
 
@@ -271,7 +271,7 @@ Visualization and Results
        log_path: "../results"
        project_name: rlinf
        experiment_name: "calvin_d_d_ppo_openpi_pi05"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 
 CALVIN Results

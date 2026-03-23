@@ -1,10 +1,8 @@
 多节点训练
 ===================
 
-本指南将带你启动一个 **4 节点的 Ray 集群** （每个节点有 **8 块 GPU** ），  
-并使用  
-`DeepSeek-R1-Distill-Qwen-1.5B <https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B>`_  
-模型在 *math* 任务上运行分布式强化学习训练。
+本指南将带你启动一个 **4 节点的 Ray 集群** （每个节点有 **8 块 GPU** ），
+并运行分布式**具身强化学习**训练。
 
 只要你根据实际情况修改 YAML 配置文件，这一套流程也可以扩展到任意数量的节点和 GPU。
 
@@ -74,23 +72,23 @@
 共享式模式
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-所有训练阶段（rollout、inference、actor）共享 **所有 GPU**。  
+所有训练阶段（actor、env、rollout）共享 **所有 GPU**。  
 修改示例 YAML：
 
 .. code-block:: yaml
 
-   # examples/reasoning/config/math/qwen2.5-1.5b-grpo-megatron.yaml
+   # examples/embodiment/config/maniskill_ppo_openvla_quickstart.yaml
    cluster:
      num_nodes: 4          # 根据你的集群情况修改
      component_placement:
-       actor,rollout: all  # “all” 表示使用所有可见 GPU
+       actor,env,rollout: all  # “all” 表示使用所有可见 GPU
 
 在 head 节点上运行：
 
 .. code-block:: bash
 
-   bash examples/reasoning/run_main_grpo_math.sh \
-        qwen2.5-1.5b-grpo-megatron
+   bash examples/embodiment/run_embodiment.sh \
+        maniskill_ppo_openvla_quickstart
 
 分离式模式
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -100,20 +98,20 @@
 
 .. code-block:: yaml
 
-   # examples/reasoning/config/math/qwen2.5-1.5b-grpo-megatron-pipeline.yaml
+   # examples/embodiment/config/maniskill_ppo_openvla_quickstart.yaml
    cluster:
      num_nodes: 4
      component_placement:
-       rollout:    0-19        # 使用 20 块 GPU
-       inference:  20-23       # 使用 4 块 GPU
+       env:        0-7         # 使用 8 块 GPU
+       rollout:    8-23        # 使用 16 块 GPU
        actor:      24-31       # 使用 8 块 GPU
 
-* 注意：``rollout + inference + actor`` 使用的 GPU 总数必须等于总 GPU 数（此例中为 ``32``）。
+* 注意：``env + rollout + actor`` 使用的 GPU 总数必须等于总 GPU 数（此例中为 ``32``）。
 * 范围是 **闭区间** （即包含起止编号）。
 
 启动任务：
 
 .. code-block:: bash
 
-   bash examples/reasoning/run_main_grpo_math.sh \
-        qwen2.5-1.5b-grpo-megatron-pipeline
+   bash examples/embodiment/run_embodiment.sh \
+        maniskill_ppo_openvla_quickstart

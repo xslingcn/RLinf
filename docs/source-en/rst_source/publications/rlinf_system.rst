@@ -161,7 +161,7 @@ The following tables report evaluation performance of models trained with RLinf 
      - 30.42
      - 32.11
      - 33.44
-   * - `DeepScaleR-1.5B-Preview <https://huggingface.co/agentica-org/DeepScaleR-1.5B-Preview>`__
+   * - DeepScaleR-1.5B-Preview
      - 40.41
      - 30.93
      - 27.54
@@ -239,7 +239,6 @@ Quickstart
 ----------
 
 - **Installation:** :doc:`../start/installation`
-- **Math (reasoning) training:** :doc:`../start/llm`
 - **Embodied training:** :doc:`../start/vla`
 
 Citation

@@ -36,8 +36,8 @@
 
 - :doc:`logger`  
    介绍如何在训练过程中可视化和跟踪关键指标。  
-   目前，我们支持三种实验追踪与可视化后端：  
-   TensorBoard、Weights & Biases (wandb) 和 SwanLab。  
+   目前，我们支持两种实验追踪与可视化后端：  
+   TensorBoard 和 Weights & Biases (wandb)。  
 
 
 .. toctree::

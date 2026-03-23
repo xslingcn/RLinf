@@ -21,10 +21,8 @@ from rlinf.algorithms.utils import (
     calculate_scores,
     postprocess_embodied_advantages_outputs,
     postprocess_loss_metric,
-    postprocess_reasoning_advantages_outputs,
     preprocess_embodied_advantages_inputs,
     preprocess_loss_inputs,
-    preprocess_reasoning_advantages_inputs,
 )
 
 ADV_REGISTRY: dict[str, Callable] = {}
@@ -102,19 +100,16 @@ def calculate_adv_and_returns(**kwargs) -> tuple[torch.Tensor, Optional[torch.Te
     fn = get_adv_and_returns(adv_type)
 
     task_type = kwargs["task_type"]
-    if task_type == "embodied":
-        kwargs = preprocess_embodied_advantages_inputs(**kwargs)
-        if adv_type != "gae":
-            kwargs = calculate_scores(**kwargs)
-        advantages, returns = fn(**kwargs)
-        res = postprocess_embodied_advantages_outputs(
-            advantages=advantages, returns=returns, **kwargs
-        )
-    else:
-        # reasoning tasks
-        kwargs = preprocess_reasoning_advantages_inputs(**kwargs)
-        advantages, returns = fn(**kwargs)
-        res = postprocess_reasoning_advantages_outputs(advantages, returns)
+    if task_type != "embodied":
+        raise ValueError(f"Unsupported task_type for advantage calculation: {task_type}")
+
+    kwargs = preprocess_embodied_advantages_inputs(**kwargs)
+    if adv_type != "gae":
+        kwargs = calculate_scores(**kwargs)
+    advantages, returns = fn(**kwargs)
+    res = postprocess_embodied_advantages_outputs(
+        advantages=advantages, returns=returns, **kwargs
+    )
     return res
 
 
@@ -137,20 +132,3 @@ def get_loss_scales(names: list[str]) -> list[Callable]:
         loss_scales.append(LOSS_SCALE_REGISTRY[name])
     return loss_scales
 
-
-TOOLCALL_PARSER_REGISTRY: dict[str, Callable] = {}
-
-
-def register_toolcall_parser(name: str):
-    def decorator(cls):
-        TOOLCALL_PARSER_REGISTRY[name.lower()] = cls
-        return cls
-
-    return decorator
-
-
-def get_toolcall_parser(name: str) -> Callable:
-    if name not in TOOLCALL_PARSER_REGISTRY:
-        raise ValueError(f"Toolcall parser {name} not registered")
-    cls = TOOLCALL_PARSER_REGISTRY[name]
-    return cls()

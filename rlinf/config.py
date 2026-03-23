@@ -30,8 +30,6 @@ from rlinf.envs import SupportedEnvType
 from rlinf.scheduler.cluster import Cluster
 from rlinf.utils.placement import (
     HybridComponentPlacement,
-    ModelParallelComponentPlacement,
-    PlacementMode,
 )
 
 if TYPE_CHECKING:
@@ -42,12 +40,6 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 class SupportedModel(Enum):
-    # Reasoning models
-    QWEN2_5 = ("qwen2.5", "reasoning")
-    QWEN2_5_VL = ("qwen2.5_vl", "reasoning")
-    QWEN3 = ("qwen3", "reasoning")
-    QWEN3_MOE = ("qwen3_moe", "reasoning")
-
     # Embodied models
     OPENVLA = ("openvla", "embodied")
     OPENVLA_OFT = ("openvla_oft", "embodied")
@@ -956,117 +948,6 @@ def validate_sft_cfg(cfg: DictConfig) -> DictConfig:
             # set the val_check_interval to -1 if there is no eval data
             cfg.runner.val_check_interval = -1
     return cfg
-
-
-def validate_reasoning_cfg(cfg: DictConfig) -> DictConfig:
-    assert cfg.algorithm.recompute_logprobs or cfg.rollout.return_logprobs, (
-        "One of `algorithm.recompute_logprobs` or `rollout.return_logprobs` must be True to compute `prev_logprobs`."
-    )
-
-    if cfg.algorithm.recompute_logprobs and cfg.rollout.return_logprobs:
-        assert cfg.algorithm.get("importance_sampling_fix", False), (
-            "Importance sampling fix must be enabled if both `algorithm.recompute_logprobs` and `rollout.return_logprobs` are True."
-        )
-
-    with open_dict(cfg):
-        cfg.algorithm.training_batch_size_per_gpu = cfg.algorithm.get(
-            "training_batch_size_per_gpu", 1
-        )
-        cfg.algorithm.n_minibatches = cfg.algorithm.get("n_minibatches", 1)
-        cfg.algorithm.max_num_gen_batches = cfg.algorithm.get("max_num_gen_batches", 1)
-        cfg.actor.micro_batch_size = cfg.algorithm.training_batch_size_per_gpu
-        cfg.actor.global_batch_size = (
-            cfg.data.rollout_batch_size
-            * cfg.algorithm.group_size
-            // cfg.algorithm.n_minibatches
-        )
-        assert cfg.actor.micro_batch_size >= 1
-        assert cfg.actor.global_batch_size >= 1
-        if hasattr(cfg, "critic"):
-            cfg.critic.micro_batch_size = cfg.algorithm.training_batch_size_per_gpu
-            cfg.critic.global_batch_size = (
-                cfg.data.rollout_batch_size
-                * cfg.algorithm.group_size
-                // cfg.algorithm.n_minibatches
-            )
-        assert cfg.runner.seq_length > cfg.data.max_prompt_length, (
-            f"runner.seq_length ({cfg.runner.seq_length}) must be greater than data.max_prompt_length ({cfg.data.max_prompt_length})"
-        )
-
-        # add configs for importance sampling fix
-        cfg.algorithm.recompute_logprobs = (
-            cfg.algorithm.recompute_logprobs
-            or cfg.algorithm.get("importance_sampling_fix", False)
-        )
-
-        cfg.rollout = validate_rollout_cfg(cfg.rollout, cfg.algorithm)
-    return cfg
-
-
-def validate_reasoning_eval_cfg(cfg: DictConfig) -> DictConfig:
-    with open_dict(cfg):
-        assert cfg.runner.seq_length > cfg.data.max_prompt_length, (
-            f"runner.seq_length ({cfg.runner.seq_length}) must be greater than data.max_prompt_length ({cfg.data.max_prompt_length})"
-        )
-        cfg.rollout = validate_rollout_cfg(cfg.rollout, cfg.algorithm)
-    return cfg
-
-
-def validate_coding_online_rl_cfg(cfg: DictConfig) -> DictConfig:
-    assert (
-        get_supported_model(cfg.rollout.model.model_type) == SupportedModel.QWEN2_5
-    ), f"Model type {cfg.rollout.model.model_type} is not supported"
-
-    assert cfg.algorithm.recompute_logprobs or cfg.rollout.return_logprobs, (
-        "One of `algorithm.recompute_logprobs` or `rollout.return_logprobs` must be True to compute `prev_logprobs`."
-    )
-
-    if cfg.algorithm.recompute_logprobs and cfg.rollout.return_logprobs:
-        assert cfg.algorithm.get("importance_sampling_fix", False), (
-            "Importance sampling fix must be enabled if both `algorithm.recompute_logprobs` and `rollout.return_logprobs` are True."
-        )
-
-    assert cfg.algorithm.recompute_logprobs, (
-        "Online coding task must use recompute_logprobs"
-    )
-
-    assert cfg.actor.training_backend == "megatron", (
-        "Online coding task must use megatron training backend"
-    )
-
-    cluster = Cluster()
-    component_placement = ModelParallelComponentPlacement(cfg, cluster)
-    assert component_placement.placement_mode == PlacementMode.DISAGGREGATED, (
-        "Online coding task must use disaggregated placement mode"
-    )
-
-    with open_dict(cfg):
-        cfg.algorithm.training_batch_size_per_gpu = cfg.algorithm.get(
-            "training_batch_size_per_gpu", 1
-        )
-        cfg.algorithm.n_minibatches = cfg.algorithm.get("n_minibatches", 1)
-        cfg.algorithm.max_num_gen_batches = cfg.algorithm.get("max_num_gen_batches", 1)
-        cfg.actor.micro_batch_size = cfg.algorithm.training_batch_size_per_gpu
-        cfg.actor.global_batch_size = (
-            cfg.data.rollout_batch_size
-            * cfg.algorithm.group_size
-            // cfg.algorithm.n_minibatches
-        )
-        assert cfg.actor.micro_batch_size >= 1
-        assert cfg.actor.global_batch_size >= 1
-        assert cfg.runner.seq_length > cfg.data.max_prompt_length, (
-            f"runner.seq_length ({cfg.runner.seq_length}) must be greater than data.max_prompt_length ({cfg.data.max_prompt_length})"
-        )
-
-        # add configs for importance sampling fix
-        cfg.algorithm.recompute_logprobs = (
-            cfg.algorithm.recompute_logprobs
-            or cfg.algorithm.get("importance_sampling_fix", False)
-        )
-
-        cfg.rollout = validate_rollout_cfg(cfg.rollout, cfg.algorithm)
-    return cfg
-
 
 def validate_cfg(cfg: DictConfig) -> DictConfig:
     OmegaConf.set_struct(cfg, True)

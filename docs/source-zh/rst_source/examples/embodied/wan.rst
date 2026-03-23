@@ -99,9 +99,9 @@ Wan 主要希望赋予模型以下能力：
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-wan
+      rlinf/rlinf:embodied-wan
       # 如果需要国内加速下载镜像，可以使用：
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-wan
+      # docker.1ms.run/rlinf/rlinf:embodied-wan
 
 **选项 2：自定义环境**
 
@@ -339,7 +339,7 @@ RLinf-Wan-LIBERO-Spatial 的目录结构如下：
          log_path: "../results"
          project_name: rlinf
          experiment_name: "libero_10_grpo_openvlaoft"
-         logger_backends: ["tensorboard"] # wandb, swanlab
+         logger_backends: ["tensorboard"] # wandb
 
 LIBERO 部分结果
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -219,7 +219,7 @@ Rollout 与推理配置
 训练控制参数
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- ``trainer.logger``：**日志后端** —— 可选 ``["wandb", "mlflow", "swanlab", "vemlp_wandb", "tensorboard", "console", "clearml"]``  
+- ``trainer.logger``：**日志后端** —— 可选 ``["wandb", "mlflow", "vemlp_wandb", "tensorboard", "console", "clearml"]``  
 - ``trainer.project_name``：实验追踪项目名  
 - ``trainer.experiment_name``：具体实验名  
 - ``trainer.n_gpus_per_node``：单节点 GPU 数  

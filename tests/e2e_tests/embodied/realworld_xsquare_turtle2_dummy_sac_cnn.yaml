@@ -23,7 +23,7 @@ runner:
     log_path: /workspace/results/realworld_dummy_button_sac_cnn
     project_name: rlinf
     experiment_name: "ci-test"
-    logger_backends: ["tensorboard"] # wandb, swanlab
+    logger_backends: ["tensorboard"] # wandb
 
   max_epochs: 2
   max_steps: -1

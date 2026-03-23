@@ -30,7 +30,7 @@ runner:
     log_path: null
     project_name: rlinf
     experiment_name: "collect-data"
-    logger_backends: ["tensorboard"] # wandb, swanlab
+    logger_backends: ["tensorboard"] # wandb
   num_data_episodes: 20
   record_task_description: False
 

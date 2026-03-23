@@ -2,10 +2,7 @@ Multi-node Training
 ===================
 
 This guide shows how to launch a **4-node Ray cluster** (each node
-has **8 GPUs**) and run distributed RL training on
-the *math* task with the
-`DeepSeek-R1-Distill-Qwen-1.5B <https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B>`_
-model.  
+has **8 GPUs**) and run distributed **embodied RL** training.  
 The same procedure scales to any number of nodes/GPUs, as long as you customize the YAML configuration according to your needs.
 
 
@@ -79,23 +76,23 @@ Here we provide startup examples in two modes: collocated mode and disaggregated
 Collocated 
 ^^^^^^^^^^^^^^
 
-Every training stage (rollout, inference, actor) shares **all GPUs**.
+Every training stage (actor, env, rollout) shares **all GPUs**.
 Edit the sample YAML:
 
 .. code-block:: yaml
 
-   # examples/reasoning/config/math/qwen2.5-1.5b-grpo-megatron.yaml
+   # examples/embodiment/config/maniskill_ppo_openvla_quickstart.yaml
    cluster:
      num_nodes: 4          # adapt to your cluster
      component_placement:
-       actor,rollout: all  # “all” means the whole visible GPU set
+       actor,env,rollout: all  # “all” means the whole visible GPU set
 
 Launch from the head node:
 
 .. code-block:: bash
 
-   bash examples/reasoning/run_main_grpo_math.sh \
-        qwen2.5-1.5b-grpo-megatron
+   bash examples/embodiment/run_embodiment.sh \
+        maniskill_ppo_openvla_quickstart
 
 
 Disaggregated
@@ -106,15 +103,15 @@ allowing fine-grained pipelining. Edit the pipeline YAML:
 
 .. code-block:: yaml
 
-   # examples/reasoning/config/math/qwen2.5-1.5b-grpo-megatron-pipeline.yaml
+   # examples/embodiment/config/maniskill_ppo_openvla_quickstart.yaml
    cluster:
      num_nodes: 4
      component_placement:
-       rollout:    0-19        # 20 GPUs
-       inference:  20-23       # 4  GPUs
+       env:        0-7         # 8  GPUs
+       rollout:    8-23        # 16 GPUs
        actor:      24-31       # 8  GPUs
 
-* ``rollout + inference + actor`` **must equal** the total GPU count
+* ``env + rollout + actor`` **must equal** the total GPU count
   (here ``32``).
 * Ranges are inclusive.
 
@@ -122,5 +119,5 @@ Start the job:
 
 .. code-block:: bash
 
-   bash examples/reasoning/run_main_grpo_math.sh \
-        qwen2.5-1.5b-grpo-megatron-pipeline
+   bash examples/embodiment/run_embodiment.sh \
+        maniskill_ppo_openvla_quickstart

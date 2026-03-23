@@ -13,10 +13,8 @@ YAML 配置
 
 在启动任何训练脚本之前，最重要的步骤是准备好配置文件（YAML）。例如：
 
-- 针对 **VLA** agent 的具身任务训练配置在  
-  ``examples/embodiment/config``  
-- 针对数学推理的 **LLM** 模型训练配置在  
-  ``examples/reasoning/config/math``  
+- 针对 **VLA** agent 的具身任务训练配置在
+  ``examples/embodiment/config``
 
 建议你先熟悉这些示例 YAML 的结构，然后逐步迭代以适配你的任务。关键选项包括（但不限于）：
 

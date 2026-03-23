@@ -41,7 +41,7 @@ runner:
     log_path: "../results"
     project_name: rlinf
     experiment_name: "sac_flow"
-    logger_backends: ["tensorboard"] # wandb, swanlab
+    logger_backends: ["tensorboard"] # wandb
 
   max_epochs: 8000 # 16000 -> 8000 for real world
   max_steps: -1

@@ -6,9 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "rlinf"
 version = "0.2.0"
 authors = [{ name = "RLinf Contributors" }]
-description = "Reinforcement Learning Infrastructure for Embodied and Agentic AI"
+description = "Reinforcement Learning Infrastructure for Embodied AI"
 readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">=3.10,<=3.11.14"
+requires-python = ">=3.11,<=3.11.14"
 license = {file = "LICENSE"}
 keywords = [
     "reinforcement-learning",
@@ -32,7 +32,7 @@ dependencies = [
     # Core System
     # These are the dependencies of the core scheduler
     "ray[default]>=2.47.0",
-    "torch>=2.5.0,<=2.9.0",
+    "torch>=2.5.0,<=2.9.1",
     "hydra-core",
     "numpy>=1.22.4,<2.0.0",
     # Data processing
@@ -63,7 +63,6 @@ dependencies = [
     "i2rt",
     # Logging
     "wandb<0.25.1",
-    "swanlab>=0.6.11",
     "tensorboard",
     "beaker-gantry>=1.16.0",
 ]
@@ -78,36 +77,8 @@ Documentation = "https://rlinf.readthedocs.io/"
 dev = [
     "pre-commit",
 ]
-agentic-sglang = [
-    "sglang[all]==0.4.6.post5",
-    "torch-memory-saver",
-    "numpy==2.2",
-    "transformers==4.51.1",
-    # uvloop is not compatible with simulators, put it here
-    "uvloop==0.21.0",
-    "hydra-core==1.4.0.dev1",
-    "omegaconf==2.4.0.dev4",
-    "word2number",
-    "regex",
-    "peft==0.11.1",
-    "rlinf_latex2sympy2",
-    "mcp",
-]
-agentic-vllm = [
-    "vllm==0.8.5",
-    "numpy==2.2",
-    "transformers==4.51.1",
-    # uvloop is not compatible with simulators, put it here
-    "uvloop==0.21.0",
-    "hydra-core==1.4.0.dev1",
-    "omegaconf==2.4.0.dev4",
-    "word2number",
-    "regex",
-    "peft==0.11.1",
-    "rlinf_latex2sympy2",
-    "mcp",
-]
 embodied = [
+    "openpi",
     "transformers==4.57.3",
     "peft",
     "timm",
@@ -150,22 +121,21 @@ xsquare_turtle2 = [
 [tool.uv.sources]
 yam_realtime = { path = "third_party/yam_realtime", editable = true }
 i2rt = { path = "third_party/i2rt", editable = true }
+openpi = { git = "https://github.com/xslingcn/openpi", rev = "fe1d5e414a45d17c173bff947c8a37926da1503b" }
 
 [tool.uv]
 prerelease = "allow"
 conflicts = [
     [
-      { extra = "agentic-sglang" },
-      { extra = "agentic-vllm" },
       { extra = "embodied" },
       { extra = "franka" },
       { extra = "xsquare_turtle2" }
     ],
 ]
 override-dependencies = [
-    "torch==2.6.0",
-    "torchvision==0.21.0",
-    "torchaudio==2.6.0",
+    "torch==2.9.1",
+    "torchvision==0.24.1",
+    "torchaudio==2.9.1",
     "torchcodec==0.2",
     "xgrammar==0.1.19",
     "uvloop==0.21.0",

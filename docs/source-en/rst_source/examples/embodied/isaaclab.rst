@@ -100,9 +100,9 @@ Use Docker image for the experiment.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-isaaclab
+      rlinf/rlinf:embodied-isaaclab
       # For mainland China users, you can use the following for better download speed:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-isaaclab
+      # docker.1ms.run/rlinf/rlinf:embodied-isaaclab
 
 **Option 2: Custom Environment**
 
@@ -289,7 +289,7 @@ Visualization and Results
        log_path: "../results"
        project_name: rlinf
        experiment_name: "isaaclab_franka_stack_cube_ppo_gr00t"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 Reinforcement learning result
 ------------------------------------------

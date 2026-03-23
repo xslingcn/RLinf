@@ -16,7 +16,7 @@ USE_MIRRORS=0
 GITHUB_PREFIX=""
 NO_ROOT=0
 NO_INSTALL_RLINF_CMD=""
-SUPPORTED_TARGETS=("embodied" "agentic" "docs")
+SUPPORTED_TARGETS=("embodied" "docs")
 SUPPORTED_MODELS=("openvla" "openvla-oft" "openpi" "gr00t" "dexbotic")
 SUPPORTED_ENVS=("behavior" "maniskill_libero" "metaworld" "calvin" "isaaclab" "robocasa" "franka" "frankasim" "robotwin" "habitat" "opensora" "wan" "xsquare_turtle2" "remote")
 
@@ -28,7 +28,6 @@ Usage: bash install.sh <target> [options]
 
 Targets:
     embodied               Install embodied model and envs (default).
-    agentic                Install agentic stack (Megatron etc.).
     docs                   Install documentation requirements.
 
 Options (for target=embodied):
@@ -440,7 +439,6 @@ install_openpi_model() {
             PYTHON_VERSION="3.10"
             create_and_sync_venv
             install_common_embodied_deps
-            uv pip install git+${GITHUB_PREFIX}https://github.com/RLinf/openpi
             install_behavior_env
             uv pip install protobuf==6.33.0
             ;;
@@ -448,41 +446,35 @@ install_openpi_model() {
             create_and_sync_venv
             install_common_embodied_deps
             install_maniskill_libero_env
-            uv pip install git+${GITHUB_PREFIX}https://github.com/RLinf/openpi
             install_flash_attn
             ;;
         metaworld)
             create_and_sync_venv
             install_common_embodied_deps
-            uv pip install git+${GITHUB_PREFIX}https://github.com/RLinf/openpi
             install_flash_attn
             install_metaworld_env
             ;;
         calvin)
             create_and_sync_venv
             install_common_embodied_deps
-            uv pip install git+${GITHUB_PREFIX}https://github.com/RLinf/openpi
             install_flash_attn
             install_calvin_env
             ;;
         robocasa)
             create_and_sync_venv
             install_common_embodied_deps
-            uv pip install git+${GITHUB_PREFIX}https://github.com/RLinf/openpi
             install_flash_attn
             install_robocasa_env
             ;;
         robotwin)
             create_and_sync_venv
             install_common_embodied_deps
-            uv pip install git+${GITHUB_PREFIX}https://github.com/RLinf/openpi
             install_flash_attn
             install_robotwin_env
             ;;
         remote)
             create_and_sync_venv
             install_common_embodied_deps
-            uv pip install git+${GITHUB_PREFIX}https://github.com/RLinf/openpi
             install_flash_attn
             ;;
         *)
@@ -808,34 +800,9 @@ install_wan_world_model() {
     uv pip install -r $SCRIPT_DIR/embodied/models/wan.txt
 }
 
-#=======================AGENTIC INSTALLER=======================
-
-install_agentic() {
-    uv sync --extra agentic-vllm --active $NO_INSTALL_RLINF_CMD
-    uv sync --extra agentic-sglang --inexact --active $NO_INSTALL_RLINF_CMD
-
-    # Megatron-LM
-    # Prefer an existing checkout if MEGATRON_PATH is provided; otherwise clone into the venv.
-    local megatron_dir
-    megatron_dir=$(clone_or_reuse_repo MEGATRON_PATH "$VENV_DIR/Megatron-LM" https://github.com/NVIDIA/Megatron-LM.git -b core_r0.13.0)
-
-    echo "export PYTHONPATH=$(realpath "$megatron_dir"):\$PYTHONPATH" >> "$VENV_DIR/bin/activate"
-
-    # If TEST_BUILD is 1, skip installing megatron.txt
-    if [ "$TEST_BUILD" -ne 1 ]; then
-        uv pip install -r $SCRIPT_DIR/agentic/megatron.txt --no-build-isolation
-    fi
-
-    install_apex
-    install_flash_attn
-    uv pip uninstall pynvml || true
-}
-
 #=======================DOCUMENTATION INSTALLER=======================
 
 install_docs() {
-    uv sync --extra agentic-vllm --active $NO_INSTALL_RLINF_CMD
-    uv sync --extra agentic-sglang --inexact --active $NO_INSTALL_RLINF_CMD
     uv sync --extra embodied --active --inexact $NO_INSTALL_RLINF_CMD
     uv pip install -r $SCRIPT_DIR/docs/requirements.txt
     uv pip uninstall pynvml || true
@@ -885,10 +852,6 @@ main() {
                     install_env_only
                     ;;
             esac
-            ;;
-        agentic)
-            create_and_sync_venv
-            install_agentic
             ;;
         docs)
             create_and_sync_venv

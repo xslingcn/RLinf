@@ -18,50 +18,7 @@ _GLOBAL_CONFIG = None
 
 
 def init_global_config(config, component_placement, cluster) -> None:
-    if config.runner.task_type == "reasoning":
-        init_global_config_reasoning(config, component_placement)
-    else:
-        init_global_config_env(config, component_placement, cluster)
-
-
-def init_global_config_reasoning(config, component_placement) -> None:
-    global _GLOBAL_CONFIG
-
-    _GLOBAL_CONFIG = Namespace(
-        task_type=config.runner.task_type,
-        total_gpus=component_placement._cluster_num_gpus,
-        group_size=config.algorithm.group_size,
-        n_minibatches=config.algorithm.n_minibatches,
-        rollout_batch_size=config.data.rollout_batch_size,
-        seq_length=config.runner.seq_length,
-        max_running_requests=config.rollout.max_running_requests,
-        gpu_memory_utilization=config.rollout.gpu_memory_utilization,
-        components_config={},
-    )
-
-    for component in component_placement._components:
-        if component == "reward":
-            continue
-        instance_num = getattr(component_placement, f"{component}_dp_size")
-        world_size = getattr(component_placement, f"{component}_world_size")
-        model_parallel_size = world_size // instance_num
-
-        _GLOBAL_CONFIG.components_config[component] = Namespace(
-            model_parallel_size=model_parallel_size,
-            max_world_size=world_size,
-            collocated_cost_total=getattr(config.profile_data, f"{component}_cost"),
-        )
-
-    if "inference" not in component_placement._components:
-        model_parallel_size = _GLOBAL_CONFIG.components_config[
-            "actor"
-        ].model_parallel_size
-        world_size = _GLOBAL_CONFIG.components_config["actor"].max_world_size
-        _GLOBAL_CONFIG.components_config["inference"] = Namespace(
-            model_parallel_size=model_parallel_size,
-            max_world_size=world_size,
-            collocated_cost_total=getattr(config.profile_data, "inference_cost"),
-        )
+    init_global_config_env(config, component_placement, cluster)
 
 
 def init_global_config_env(config, component_placement, cluster) -> None:

@@ -71,7 +71,7 @@ runner
       log_path: ${runner.output_dir}/${runner.experiment_name}
       project_name: rlinf
       experiment_name: ${runner.experiment_name}
-      logger_backends: ["tensorboard"] # wandb, swanlab
+      logger_backends: ["tensorboard"] # wandb
 
     max_epochs: 5
     max_steps: -1
@@ -95,7 +95,7 @@ runner
 
 ``runner.logger.experiment_name``: Specific experiment name.
 
-``runner.logger.logger_backends``: List of logging backends (tensorboard, wandb, swanlab).
+``runner.logger.logger_backends``: List of logging backends (tensorboard, wandb).
 
 See more details about logger backends in :doc:`../advance/logger`.
 

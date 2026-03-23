@@ -12,8 +12,8 @@ RL 训练前的自动放置
 
 自动放置工具由 `toolkits/auto_placement` 下的三个主要组件构成：
 
-- **scheduler_task.py**：主调度器，执行时间与空间的分时复用以寻找最优放置方案  
-- **resource_allocator.py**：负责不同组件的资源分配  
+- **auto_placement_worker.py**：主调度器，执行时间与空间的分时复用以寻找最优放置方案  
+- **placement.py**：负责组合不同调度结果并计算成本  
 - **workflow.py**：管理工作流图和成本计算  
 
 使用方法
@@ -23,7 +23,7 @@ RL 训练前的自动放置
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 在运行自动放置工具之前，你需要收集组件的 Profile 数据。  
-这包括测量各组件（rollout、inference、training 等）在共享式模式下一次迭代的计算时间。
+这包括测量各组件（env、rollout、training 等）在共享式模式下一次迭代的计算时间。
 
 将 Profile 数据添加到 YAML 配置文件的 ``profile_data`` 部分：
 
@@ -31,8 +31,8 @@ RL 训练前的自动放置
 
    profile_data:
      actor_cost: 95.7      # Training 组件耗时（每次迭代秒数）
-     inference_cost: 30.8  # Inference 组件耗时（每次迭代秒数）
-     rollout_cost: 59.9    # Rollout 组件耗时（每次迭代秒数）
+     env_profile_data: {...}
+     rollout_profile_data: {...}
 
 **如何收集 Profile 数据：**
 
@@ -47,8 +47,7 @@ RL 训练前的自动放置
 
 .. code-block:: bash
 
-   cd examples/reasoning
-   ./run_placement_autotune.sh [config_name]
+   bash examples/embodiment/run_placement_autotune.sh [config_name]
 
 其中 ``config_name`` 是你的配置文件名称。
 
@@ -61,7 +60,9 @@ RL 训练前的自动放置
    cluster:
      num_nodes: 1
      component_placement:
-       rollout,actor: all
+       env: 0-7
+       rollout: 8-23
+       actor: 24-31
 
 步骤 3：应用结果
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -74,6 +75,6 @@ RL 训练前的自动放置
 故障排查
 ~~~~~~~~~~~~~~~~~~~~~
 
-1. **缺少 Profile 数据错误**：确保 YAML 文件包含 ``profile_data`` 部分，并包含三个组件的耗时数值。  
+1. **缺少 Profile 数据错误**：确保 YAML 文件包含 ``profile_data`` 部分，并包含 actor、env 和 rollout 的 profile 数据。  
 
 2. **无效放置**：检查 GPU 总分配是否超过集群容量。  

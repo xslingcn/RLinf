@@ -45,14 +45,7 @@ RLinf 目前通过 Patch 方式集成 FUSCO，支持以 Megatron-LM 为后端的
 
 满足以上条件且正确安装 FUSCO 后，RLinf 会自动启用 FUSCO。
 
-可以通过以下命令进行测试：
-
-.. code-block:: bash
-
-  FUSCO_SO_PATH=/path/to/libfusco.so \
-  REPO_PATH=/path/to/RLinf/ \
-  bash tests/e2e_tests/reasoning/run.sh \
-  qwen3-moe-2.5b-collocated-mg-sgl-ep-fusco-test
+可以通过任意启用了上述 FUSCO 相关模型选项的 Megatron MoE 训练配置来验证安装是否生效。
 
 
 参考

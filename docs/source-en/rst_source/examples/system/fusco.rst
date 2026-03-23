@@ -45,14 +45,8 @@ Configuration Description:
 
 After meeting the above conditions and installing FUSCO correctly, RLinf will automatically enable FUSCO.
 
-You can test with the following command:
-
-.. code-block:: bash
-
-  FUSCO_SO_PATH=/path/to/libfusco.so \
-  REPO_PATH=/path/to/RLinf/ \
-  bash tests/e2e_tests/reasoning/run.sh \
-  qwen3-moe-2.5b-collocated-mg-sgl-ep-fusco-test
+You can validate the setup by running any Megatron-based MoE training config that
+enables the same FUSCO-related model options shown above.
 
 
 References

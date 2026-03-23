@@ -205,7 +205,7 @@ RLinf 使用方式
 
 .. code-block:: bash
 
-   bash examples/reasoning/run_main_grpo_math.sh <config_name>
+   bash examples/embodiment/run_embodiment.sh <config_name>
 
 如果你的集群同时存在更复杂的软件环境差异或异构硬件布局，可以进一步结合
 :doc:`hetero` 与 :doc:`../user/cluster` 一起使用。

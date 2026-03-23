@@ -16,12 +16,6 @@ RLinf 支持实时实验追踪。
   artifacts（用于模型与数据的版本管理）、  
   报告与团队协作功能。  
 
-- `SwanLab <https://pypi.org/project/swanlab/>`_:  
-  一个开源、轻量级的实验日志与可视化工具，  
-  适用于本地或自建环境。  
-  它提供直观的 Python API，记录指标、超参数、硬件与代码信息，  
-  并通过简洁的界面支持实验对比 —— 非常适合注重隐私的工作流。  
-
 启用后端
 -------------------
 
@@ -35,7 +29,7 @@ RLinf 支持实时实验追踪。
        log_path: ${runner.output_dir}/${runner.experiment_name}
        project_name: rlinf
        experiment_name: ${runner.experiment_name}
-       logger_backends: ["tensorboard", "wandb", "swanlab"]   # <─ 选择任意子集
+       logger_backends: ["tensorboard", "wandb"]   # <─ 选择任意子集
      experiment_name: grpo-1.5b
      output_dir: ./logs
 
@@ -47,7 +41,6 @@ RLinf 会为每个启用的后端创建一个子目录：
    ├── checkpoints/
    ├── converted_ckpts/
    ├── log/                
-   ├── swanlab/            # SwanLab 事件文件
    ├── tensorboard/        # TensorBoard 事件文件
    └── wandb/              # WandB 运行目录
 
@@ -77,20 +70,6 @@ Weights & Biases (WandB)
 你可以通过 dashboard 查看这些指标。  
 
 
-SwanLab
--------
-
-#. 在 `swanlab.ai <https://swanlab.ai>`__ 注册并获取 *access token*。  
-#. 认证：  
-
-.. code-block:: bash
-
-    swanlab login        # 按提示粘贴 access token
-
-之后 RLinf 会自动启动一个新的 *run* 并流式传输所有指标。  
-你可以通过 dashboard 查看这些指标。  
-
-
 .. tip::
 
-   三个 logger 可以 **并行运行**；你可以自由组合使用。
+   两个 logger 可以 **并行运行**；你可以自由组合使用。

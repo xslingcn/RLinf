@@ -143,9 +143,9 @@ Use Docker image for the experiment.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-robocasa
+      rlinf/rlinf:embodied-robocasa
       # For mainland China users, you can use the following for better download speed:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-robocasa
+      # docker.1ms.run/rlinf/rlinf:embodied-robocasa
 
 **Option 2: Custom Environment**
 

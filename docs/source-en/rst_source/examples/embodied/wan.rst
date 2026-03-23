@@ -104,9 +104,9 @@ Run experiments in Docker.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-wan
+      rlinf/rlinf:embodied-wan
       # For better image download speed in mainland China:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-wan
+      # docker.1ms.run/rlinf/rlinf:embodied-wan
 
 **Option 2: Custom local environment**
 
@@ -347,7 +347,7 @@ Visualization and Results
          log_path: "../results"
          project_name: rlinf
          experiment_name: "libero_10_grpo_openvlaoft"
-         logger_backends: ["tensorboard"] # wandb, swanlab
+         logger_backends: ["tensorboard"] # wandb
 
 LIBERO Partial Results
 ~~~~~~~~~~~~~~~~~~~~~~

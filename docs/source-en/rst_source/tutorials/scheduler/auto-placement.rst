@@ -11,8 +11,8 @@ Overview
 
 The auto placement tool consists of three main components in `toolkits/auto_placement`:
 
-- **scheduler_task.py**: Main scheduler that performs time and space division multiplexing to find optimal placements
-- **resource_allocator.py**: Handles resource allocation for different components
+- **auto_placement_worker.py**: Main scheduler that performs time and space division multiplexing to find optimal placements
+- **placement.py**: Handles schedule composition and placement costs
 - **workflow.py**: Manages workflow graphs and cost calculations
 
 Usage
@@ -21,16 +21,16 @@ Usage
 Step 1: Collect Profile Data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Before running the auto placement tool, you need to collect profile data for your components. This includes measuring the computation time for each component (rollout, inference, training, etc.) in collocated mode for one iteration.
+Before running the auto placement tool, you need to collect profile data for your components. This includes measuring the computation time for each component (env, rollout, training, etc.) in collocated mode for one iteration.
 
 Add the profile data to your YAML configuration file under the ``profile_data`` section:
 
 .. code-block:: yaml
 
    profile_data:
-     actor_cost: 95.7    # Training component cost (seconds per iteration)
-     inference_cost: 30.8  # Inference component cost (seconds per iteration)
-     rollout_cost: 59.9    # Rollout component cost (seconds per iteration)
+     actor_cost: 95.7       # Training component cost (seconds per iteration)
+     env_profile_data: {...}
+     rollout_profile_data: {...}
 
 **How to collect profile data:**
 
@@ -45,8 +45,7 @@ Use the provided shell script to run the auto placement tool:
 
 .. code-block:: bash
 
-   cd examples/reasoning
-   ./run_placement_autotune.sh [config_name]
+   bash examples/embodiment/run_placement_autotune.sh [config_name]
 
 Where ``config_name`` is the name of your configuration file.
 
@@ -59,7 +58,9 @@ The output of this script is like:
    cluster:
      num_nodes: 1
      component_placement:
-       rollout,actor: all
+       env: 0-7
+       rollout: 8-23
+       actor: 24-31
 
 Step 3: Apply the Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -71,7 +72,6 @@ Replace the ``cluster.component_placement`` section in your original configurati
 Troubleshooting
 ~~~~~~~~~~~~~~~
 
-1. **Profile data not provided error**: Ensure your YAML file includes the ``profile_data`` section with all three cost values.
+1. **Profile data not provided error**: Ensure your YAML file includes the ``profile_data`` section with actor, env, and rollout profile data.
 
 2. **Invalid placement**: Check that the total GPU allocation doesn't exceed your cluster capacity.
-

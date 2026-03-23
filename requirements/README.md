@@ -16,8 +16,6 @@ The script is organized by **targets** and **models**:
 
 	Each embodied model also requires an `--env` argument to specify the environment, e.g. `maniskill_libero`, `behavior`, or `metaworld`.
 
-- `reason` target (reasoning / Megatron stack).
-
 For example, to install the dependencies for the OpenVLA + ManiSkill LIBERO experiment, you would run:
 ```shell
 bash requirements/install.sh embodied --model openvla --env maniskill_libero
@@ -32,11 +30,6 @@ source .venv/bin/activate
 To deactivate the virtual environment, simply run:
 ```shell
 deactivate
-
-To install the reasoning (Megatron + SGLang/vLLM) stack instead, run:
-```shell
-bash requirements/install.sh agentic
-```
 
 You can override the default virtual environment directory using `--venv`. For example:
 ```shell

@@ -470,7 +470,7 @@ Below is an example YAML configuration file for the qwen2.5 model family.
 
 After adapting your new model, you can refer to this YAML configuration file and make appropriate modifications.
 
-**File:** ``examples/reasoning/config/math/qwen2.5-1.5b-grpo-megatron.yaml``  
+**File:** ``examples/embodiment/config/maniskill_ppo_openvla_quickstart.yaml``  
 
 Set Megatron parameters used by RLinf.
 

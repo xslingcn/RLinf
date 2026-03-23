@@ -212,7 +212,7 @@ or:
 
 .. code-block:: bash
 
-   bash examples/reasoning/run_main_grpo_math.sh <config_name>
+   bash examples/embodiment/run_embodiment.sh <config_name>
 
 For more complex per-node software environments or heterogeneous hardware layouts,
 combine this guide with :doc:`hetero` and :doc:`../user/cluster`.

@@ -103,9 +103,9 @@ Use Docker image for the experiment.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-opensora
+      rlinf/rlinf:embodied-opensora
       # For mainland China users, you can use the following for better download speed:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-opensora
+      # docker.1ms.run/rlinf/rlinf:embodied-opensora
 
 **Option 2: Custom Environment**
 
@@ -334,7 +334,7 @@ Visualization and Results
          log_path: "../results"
          project_name: rlinf
          experiment_name: "libero_10_grpo_openvlaoft"
-         logger_backends: ["tensorboard"] # wandb, swanlab
+         logger_backends: ["tensorboard"] # wandb
 
 LIBERO Partial Results
 ~~~~~~~~~~~~~~~~~~~~~~

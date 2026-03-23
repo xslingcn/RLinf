@@ -93,9 +93,9 @@
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      rlinf/rlinf:embodied-maniskill_libero
       # 如果需要国内加速下载镜像，可以使用：
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      # docker.1ms.run/rlinf/rlinf:embodied-maniskill_libero
 
 对于不同模型上的实验，请通过镜像内置的 `switch_env` 工具切换到对应的虚拟环境：
 
@@ -276,7 +276,7 @@
          log_path: "../results"
          project_name: rlinf
          experiment_name: "maniskill_ppo_openvla"
-         logger_backends: ["tensorboard"] # wandb, swanlab
+         logger_backends: ["tensorboard"] # wandb
 
 ManiSkill3 结果
 ~~~~~~~~~~~~~~~~~~~

@@ -23,7 +23,7 @@ runner:
     log_path: /workspace/results/frankasim_sac_cnn_async
     project_name: rlinf
     experiment_name: "ci-test"
-    logger_backends: ["tensorboard"] # wandb, swanlab
+    logger_backends: ["tensorboard"] # wandb
 
   max_epochs: 2
   max_steps: -1

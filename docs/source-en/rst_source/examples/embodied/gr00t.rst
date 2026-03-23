@@ -99,9 +99,9 @@ Use Docker image for the experiment.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      rlinf/rlinf:embodied-maniskill_libero
       # For mainland China users, you can use the following for better download speed:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      # docker.1ms.run/rlinf/rlinf:embodied-maniskill_libero
 
 Please switch to the corresponding virtual environment via the built-in `switch_env` utility in the image:
 
@@ -348,7 +348,7 @@ Visualization and Results
        log_path: "../results"
        project_name: rlinf
        experiment_name: "libero_10_ppo_gr00t"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 --------------
 

@@ -78,9 +78,9 @@ Run experiments with the Docker image.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      rlinf/rlinf:embodied-maniskill_libero
       # For mirror in some regions:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      # docker.1ms.run/rlinf/rlinf:embodied-maniskill_libero
 
 Switch to the correct virtual environment with the image’s ``switch_env`` tool:
 
@@ -259,7 +259,7 @@ Enable video in env config to record 3DGS renders (requires ``gs_kwargs.render_i
        log_path: "../results"
        project_name: rlinf
        experiment_name: "gsenv_ppo_openpi_pi05"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 GSEnv results
 -------------------------

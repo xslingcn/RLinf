@@ -2,7 +2,7 @@
 
 Brief for AI coding agents working on RLinf. For full contribution flow, code style, and PR process see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-**Quick orientation:** RLinf is a distributed RL stack (embodied + reasoning + agent). It uses **Ray** for process management and **Hydra** for config. Single-machine runs use `cluster.num_nodes: 1`; multi-node needs Ray started on every node with `RLINF_NODE_RANK` set *before* `ray start`. Pre-commit runs Ruff (lint + format) and commit-check; use Google-style docstrings and type hints. All user-facing changes need tests and docs. If something is unclear, add a `TODO(agent)` and note the limitation.
+**Quick orientation:** RLinf is a distributed embodied RL stack. It uses **Ray** for process management and **Hydra** for config. Single-machine runs use `cluster.num_nodes: 1`; multi-node needs Ray started on every node with `RLINF_NODE_RANK` set *before* `ray start`. Pre-commit runs Ruff (lint + format) and commit-check; use Google-style docstrings and type hints. All user-facing changes need tests and docs. If something is unclear, add a `TODO(agent)` and note the limitation.
 
 ---
 
@@ -10,20 +10,19 @@ Brief for AI coding agents working on RLinf. For full contribution flow, code st
 
 - **`.cursor/`** – Rules and skills: `rules/agents-md.mdc`, `skills/add-install-docker-ci-e2e`, `skills/add-example-doc-model-env`, `skills/review-pr`.
 - **`rlinf/`** – Main package:
-  - `agents/` – Agent logic (reasoning, tools).
-  - `algorithms/` – Advantages, losses, registry, rewards (math, code, searchr1, vqa).
+  - `algorithms/` – Advantages, losses, registry, rewards.
   - `config.py` – Hydra config, `SupportedModel`, `SupportedEnvType`, validation.
-  - `data/` – Datasets for embodied, reasoning, agent.
+  - `data/` – Datasets for embodied training.
   - `envs/` – ManiSkill, LIBERO, IsaacLab, CALVIN, MetaWorld, Behavior, RoboCasa, FrankaSim, RealWorld, RoboTwin, Habitat, OpenSora world model; `get_env_cls()` in `envs/__init__.py`.
   - `hybrid_engines/` – SGLang/vLLM rollout integration.
-  - `models/` – Embodiment (OpenVLA, OpenVLA-OFT, OpenPI, GR00T, MLP/CNN/Flow/CMA) and reasoning wiring.
-  - `runners/` – Embodied (sync/async), reasoning, coding_online_rl, agent, SFT, eval.
+  - `models/` – Embodiment (OpenVLA, OpenVLA-OFT, OpenPI, GR00T, MLP/CNN/Flow/CMA).
+  - `runners/` – Embodied (sync/async) and eval.
   - `scheduler/` – Cluster, Worker, WorkerGroup, channel, manager, placement, dynamic_scheduler.
   - `utils/` – Logging, placement, data iter, distributed, checkpoint, resharding.
   - `workers/` – Actor (FSDP/Megatron), rollout (HF/server), env (sync/async), reward, replay buffer.
-- **`examples/`** – Entrypoints and YAML: embodiment, reasoning, coding_online_rl, searchr1, sft, wideseek_r1.
-- **`tests/`** – `unit_tests/`, `e2e_tests/` (embodied, agent, reasoning), scheduler tests; e2e configs under `e2e_tests/embodied/*.yaml`.
-- **`requirements/`** – `install.sh` (targets: embodied, reason, docs; `--model`, `--env`), optional deps in subdirs.
+- **`examples/`** – Entrypoints and YAML for embodied training.
+- **`tests/`** – `unit_tests/`, `e2e_tests/` (embodied), scheduler tests; e2e configs under `e2e_tests/embodied/*.yaml`.
+- **`requirements/`** – `install.sh` (targets: embodied, docs; `--model`, `--env`), optional deps in subdirs.
 - **`docker/`** – Dockerfile and build targets per model/env.
 - **`ray_utils/`** – `start_ray.sh` (multi-node head/worker), `check_ray.sh`, `realworld/setup_before_ray.sh`.
 - **`toolkits/`** – Checkpoint convertors, verifiers, eval scripts, replay buffer, auto-placement.
@@ -33,7 +32,7 @@ Brief for AI coding agents working on RLinf. For full contribution flow, code st
 
 ## How RLinf runs
 
-You launch one entry script (e.g. `train_embodied_agent.py`, `train_async.py`). It builds a **Cluster** (Ray must already be up), figures **component placement** (actor, rollout, env, reward, agent), and starts **Worker** groups. A **Runner** drives the loop: rollout → reward → advantage → actor update (and any inference/engine lifecycle). Cluster config lives in YAML under `cluster:`: `num_nodes`, `component_placement`, `node_groups` (labels, node_ranks, env_configs, optional hardware e.g. Franka). Placement (e.g. `HybridComponentPlacement`, `ModelParallelComponentPlacement`) maps components to node groups and hardware ranks. Workers are Ray remote actors with `MASTER_*`, `RANK`, etc.; they can `send`/`recv` across groups. Training backends: FSDP or Megatron. Rollout: SGLang or vLLM. Runners pick loss/advantage from config (PPO, GRPO, SAC, etc.).
+You launch one entry script (e.g. `train_embodied_agent.py`, `train_async.py`). It builds a **Cluster** (Ray must already be up), figures **component placement** (actor, rollout, env), and starts **Worker** groups. A **Runner** drives the loop: rollout → reward → advantage → actor update. Cluster config lives in YAML under `cluster:`: `num_nodes`, `component_placement`, `node_groups` (labels, node_ranks, env_configs, optional hardware e.g. Franka). Placement (e.g. `HybridComponentPlacement`, `ModelParallelComponentPlacement`) maps components to node groups and hardware ranks. Workers are Ray remote actors with `MASTER_*`, `RANK`, etc.; they can `send`/`recv` across groups.
 
 ---
 
@@ -55,9 +54,9 @@ You launch one entry script (e.g. `train_embodied_agent.py`, `train_async.py`). 
 
 ## Metrics, checkpoints, and evaluation
 
-- **Metrics:** Runners use `MetricLogger`; set `runner.logger.logger_backends` (e.g. tensorboard, wandb, swanlab). Namespaces include `train/`, `eval/`, `env/`, `rollout/`, `time/`. See [logger tutorial](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/logger.html).
+- **Metrics:** Runners use `MetricLogger`; set `runner.logger.logger_backends` (e.g. tensorboard, wandb). Namespaces include `train/`, `eval/`, `env/`, `rollout/`, `time/`. See [logger tutorial](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/logger.html).
 - **Checkpoints:** Saved every `runner.save_interval` under `.../checkpoints/global_step_<N>/`. To resume, set `runner.resume_dir` to that path and relaunch; some runners support `resume_dir: auto`. See [checkpoint resume tutorial](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/resume.html).
-- **Evaluation:** During training, `runner.val_check_interval` triggers validation. Standalone embodied: `bash examples/embodiment/eval_embodiment.sh <config_name>` with an eval config; see [VLA evaluation](https://rlinf.readthedocs.io/en/latest/rst_source/start/vla-eval.html). Reasoning/LLM: see [LLM evaluation](https://rlinf.readthedocs.io/en/latest/rst_source/start/llm-eval.html).
+- **Evaluation:** During training, `runner.val_check_interval` triggers validation. Standalone embodied: `bash examples/embodiment/eval_embodiment.sh <config_name>` with an eval config; see [VLA evaluation](https://rlinf.readthedocs.io/en/latest/rst_source/start/vla-eval.html).
 
 ---
 
@@ -106,7 +105,7 @@ For debugging (breakpoints, rendering/EGL, network, NCCL/CUDA, timeouts), see th
 
 - Add a reward class (e.g. under `rlinf/algorithms/rewards/<domain>/`) that matches the interface expected by the reward worker (e.g. callable or class with a clear contract for prompt/completions/ids).
 - In `rlinf/algorithms/rewards/__init__.py`: import the class, then `register_reward("my_reward", MyRewardClass)`. The registry is `reward_registry`; lookup via `get_reward_class(name)`.
-- Wire the reward name in config and in the runner/reward worker so the correct class is instantiated and used. For reasoning/agent tasks the config path may be under `reward.path` or similar.
+- Wire the reward name in config and in the embodied path so the correct class is instantiated and used.
 
 ### New embodied model
 
@@ -134,7 +133,7 @@ Google Python style; Ruff for lint/format; docstrings and type hints on public A
 
 - [Docs (EN)](https://rlinf.readthedocs.io/en/latest/) · [中文](https://rlinf.readthedocs.io/zh-cn/latest/)
 - [Installation](https://rlinf.readthedocs.io/en/latest/rst_source/start/installation.html) · [VLA quickstart](https://rlinf.readthedocs.io/en/latest/rst_source/start/vla.html)
-- [Example gallery](https://rlinf.readthedocs.io/en/latest/rst_source/examples/index.html) · configs in `examples/embodiment/config/`, `examples/reasoning/`, etc.
+- [Example gallery](https://rlinf.readthedocs.io/en/latest/rst_source/examples/index.html) · configs in `examples/embodiment/config/`
 - Tutorials: [placement / cluster / YAML](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/user/index.html), [hybrid / disaggregated](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/mode/index.html), [heterogeneous cluster](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/hetero.html), [extend (new env/model)](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/extend/index.html), [RL algorithms](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/rlalg/index.html), [logger (metrics)](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/logger.html), [checkpoint resume](https://rlinf.readthedocs.io/en/latest/rst_source/tutorials/advance/resume.html)
-- Evaluation: [VLA evaluation](https://rlinf.readthedocs.io/en/latest/rst_source/start/vla-eval.html) · [LLM evaluation](https://rlinf.readthedocs.io/en/latest/rst_source/start/llm-eval.html)
+- Evaluation: [VLA evaluation](https://rlinf.readthedocs.io/en/latest/rst_source/start/vla-eval.html)
 - [APIs](https://rlinf.readthedocs.io/en/latest/rst_source/apis/index.html) (actor, channel, cluster, placement, worker, env, data, …) · [FAQ](https://rlinf.readthedocs.io/en/latest/rst_source/faq.html)

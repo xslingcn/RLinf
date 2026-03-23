@@ -104,9 +104,9 @@
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-behavior
+      rlinf/rlinf:embodied-behavior
       # 如果需要国内加速下载镜像，可以使用：
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-behavior
+      # docker.1ms.run/rlinf/rlinf:embodied-behavior
 
 **选项 2：自定义环境**
 
@@ -338,7 +338,7 @@ OpenVLA-OFT 提供了一个适用于 Behavior 环境中所有任务类型的统�
        log_path: "../results"
        project_name: rlinf
        experiment_name: "behavior_ppo_openvlaoft"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 
 对于 Behavior 实验，我们受到了 

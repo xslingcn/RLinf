@@ -102,9 +102,9 @@ Use Docker image for the experiment.
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-behavior
+      rlinf/rlinf:embodied-behavior
       # For mainland China users, you can use the following for better download speed:
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-behavior
+      # docker.1ms.run/rlinf/rlinf:embodied-behavior
 
 **Option 2: Custom Environment**
 
@@ -341,7 +341,7 @@ Visualization and Results
        log_path: "../results"
        project_name: rlinf
        experiment_name: "behavior_ppo_openvlaoft"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 
 For the Behavior experiment, we were inspired by 

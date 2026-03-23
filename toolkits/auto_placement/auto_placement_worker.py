@@ -33,10 +33,7 @@ from util import get_global_config, get_valid_gpu_num_list, init_global_config
 from workflow import Workflow, traverse_st_cuts
 
 from rlinf.scheduler import Cluster
-from rlinf.utils.placement import (
-    HybridComponentPlacement,
-    ModelParallelComponentPlacement,
-)
+from rlinf.utils.placement import HybridComponentPlacement
 
 
 class AutoPlacementWorker:
@@ -110,13 +107,8 @@ class AutoPlacementWorker:
             if cost is None:
                 return None
 
-            # For reasoning task, the cost is the cost per group batch.
-            if self.config.task_type == "reasoning":
-                cost_per_group_batch = cost
-                total_cost = cost * self.config.rollout_batch_size
-            else:  # For embodiment task, the cost means total cost.
-                cost_per_group_batch = cost / self.config.env_num
-                total_cost = cost
+            cost_per_group_batch = cost / self.config.env_num
+            total_cost = cost
 
             self._result_cache[key] = SingleNodeScheduleResult(
                 total_gpu_num=gpu_num,
@@ -166,35 +158,17 @@ class AutoPlacementWorker:
 
 
 def get_workflow_graph(cfg) -> dict[str, list[str]]:
-    if cfg.runner.task_type == "reasoning":
-        if cfg.algorithm.recompute_logprobs:
-            return {
-                "rollout": ["inference"],
-                "inference": ["actor"],
-                "actor": [],
-            }
-        else:
-            return {
-                "rollout": ["actor"],
-                "actor": [],
-            }
-    elif cfg.runner.task_type == "embodied":
-        return {
-            "env": ["env_rollout"],
-            "env_rollout": ["actor"],
-            "actor": [],
-        }
-    else:
-        raise ValueError(f"{cfg.runner.task_type=} is not supported")
+    return {
+        "env": ["env_rollout"],
+        "env_rollout": ["actor"],
+        "actor": [],
+    }
 
 
 @hydra.main(version_base="1.1")
 def main(cfg):
     cluster = Cluster(cfg.cluster.num_nodes)
-    if cfg.runner.task_type == "reasoning":
-        component_placement = ModelParallelComponentPlacement(cfg, cluster)
-    else:  # embodiment task
-        component_placement = HybridComponentPlacement(cfg, cluster)
+    component_placement = HybridComponentPlacement(cfg, cluster)
     init_global_config(cfg, component_placement, cluster)
 
     workflow_graph: dict[str, list[str]] = get_workflow_graph(cfg)

@@ -97,9 +97,9 @@
       --network host \
       --name rlinf \
       -v .:/workspace/RLinf \
-      rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      rlinf/rlinf:embodied-maniskill_libero
       # 如果需要国内加速下载镜像，可以使用：
-      # docker.1ms.run/rlinf/rlinf:agentic-rlinf0.2-maniskill_libero
+      # docker.1ms.run/rlinf/rlinf:embodied-maniskill_libero
 
 请通过镜像内置的 `switch_env` 工具切换到对应的虚拟环境：
 
@@ -439,7 +439,7 @@ env** 之间的流水线重叠，从而提升 rollout 效率。
        log_path: "../results"
        project_name: rlinf
        experiment_name: "libero_10_ppo_openpi"
-       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb, swanlab
+       logger_backends: ["tensorboard", "wandb"] # tensorboard, wandb
 
 LIBERO 结果
 ~~~~~~~~~~~
