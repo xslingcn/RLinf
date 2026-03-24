@@ -79,7 +79,7 @@ dev = [
 ]
 embodied = [
     "openpi",
-    "transformers==4.57.3",
+    "transformers==4.53.2",
     "peft",
     "timm",
     "imageio[ffmpeg]",
@@ -121,7 +121,7 @@ xsquare_turtle2 = [
 [tool.uv.sources]
 yam_realtime = { path = "third_party/yam_realtime", editable = true }
 i2rt = { path = "third_party/i2rt", editable = true }
-openpi = { git = "https://github.com/xslingcn/openpi", rev = "fe1d5e414a45d17c173bff947c8a37926da1503b" }
+openpi = { git = "https://github.com/xslingcn/openpi", rev = "54cbaee6ae0c010a1ed431871cdaa8f4684ac709" }
 
 [tool.uv]
 prerelease = "allow"
@@ -143,8 +143,9 @@ override-dependencies = [
     "setuptools>=69.5.1,<75.9",
     "datasets==3.6.0",
     "peft==0.11.1",
-    "transformers==4.57.3",
-    "tokenizers>=0.22.0,<=0.23.0",
+    "transformers==4.53.2",
+    "tokenizers==0.21.1",
+    "huggingface_hub==0.36.2",
     "numpy==1.26.4",
     "fsspec==2025.3.0",
 ]

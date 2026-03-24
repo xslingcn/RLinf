@@ -27,7 +27,6 @@ from omegaconf import DictConfig
 
 from rlinf.models.embodiment.openpi.adarms_expert import (
     AdaRMSGemmaRMSNorm,
-    enable_openpi_transformers_compat,
 )
 
 
@@ -306,10 +305,6 @@ def get_model(cfg: DictConfig, torch_dtype=None):
         model: OpenPi0ForRLActionPrediction = OpenPi0ForRLActionPrediction(
             actor_model_config
         )
-    enable_openpi_transformers_compat(
-        model.paligemma_with_expert,
-        enable_adarms=getattr(actor_model_config, "pi05", False),
-    )
     # train expert only
     if actor_model_config.train_expert_only:
         model.freeze_vlm()
