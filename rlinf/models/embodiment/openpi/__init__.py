@@ -17,17 +17,12 @@ import json
 import logging
 import os
 import re
-import sys
 from contextlib import nullcontext
 from pathlib import Path
-from types import MethodType, ModuleType
+from types import MethodType
 
 import torch
 from omegaconf import DictConfig
-
-from rlinf.models.embodiment.openpi.adarms_expert import (
-    AdaRMSGemmaRMSNorm,
-)
 
 
 def _load_hf_export_norm_stats(checkpoint_dir):
@@ -109,37 +104,6 @@ def _load_hf_visual_feature_order(checkpoint_dir: str) -> tuple[str, ...] | None
     if len(image_feature_order) < 3:
         return None
     return tuple(image_feature_order[:3])
-
-
-def _ensure_openpi_transformers_overlay() -> None:
-    """Expose OpenPI's legacy SigLIP check module without patching Transformers.
-
-    The upstream OpenPI package expects a vendored
-    ``transformers.models.siglip.check`` module from its 4.53 replacement
-    layer. RLinf runs against vanilla Transformers 4.57, so provide a minimal
-    in-memory shim and relax the version gate there instead of copying files
-    into ``site-packages``.
-    """
-
-    try:
-        import transformers.models.siglip as siglip_pkg
-    except ImportError:
-        return
-
-    try:
-        from transformers.models.siglip import check
-    except ImportError:
-        check = ModuleType("transformers.models.siglip.check")
-        sys.modules[check.__name__] = check
-        siglip_pkg.check = check
-
-    check.check_whether_transformers_replace_is_installed_correctly = lambda: True
-
-
-def ensure_openpi_runtime_compat() -> None:
-    """Install OpenPI's Transformers compatibility shims before OpenPI imports."""
-
-    _ensure_openpi_transformers_overlay()
 
 
 def _normalize_openpi_state_dict_keys(
@@ -247,8 +211,6 @@ def _load_pretrained_state_dict(
 
 
 def get_model(cfg: DictConfig, torch_dtype=None):
-    _ensure_openpi_transformers_overlay()
-
     import openpi.shared.download as download
     import openpi.transforms as transforms
     import safetensors
@@ -377,10 +339,7 @@ def get_model(cfg: DictConfig, torch_dtype=None):
             module_name,
             module,
         ) in model.paligemma_with_expert.gemma_expert.model.named_modules():
-            if (
-                isinstance(module, AdaRMSGemmaRMSNorm)
-                or module.__class__.__name__ == "GemmaRMSNorm"
-            ):
+            if module.__class__.__name__ == "GemmaRMSNorm":
                 module.forward = MethodType(
                     _make_stable_gemma_rmsnorm_forward(module.forward), module
                 )
