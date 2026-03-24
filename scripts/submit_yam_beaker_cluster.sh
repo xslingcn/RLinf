@@ -2,12 +2,11 @@
 #
 # submit_yam_beaker_cluster.sh — Submit a Beaker job that starts Ray head and idles.
 #
-# This is the first half of a desktop-driven training workflow:
-#   1. This script submits a Beaker job that starts Ray head with GPUs and waits.
-#   2. The desktop joins the Ray cluster via join_beaker_cluster.sh and runs training.
-#
-# The env worker runs directly on the desktop with YAMEnv — no gRPC, no SSH tunnel,
-# no RemoteEnv. The Beaker node only provides GPUs for actor/rollout workers.
+# This is an idle-cluster debugging workflow for the real single-node Beaker
+# topology:
+#   1. Submit one Beaker job that starts Ray head with GPUs and waits.
+#   2. SSH into the container (or use the stable Tailscale hostname).
+#   3. Manually run `scripts/run_yam_marl_training.sh` as many times as needed.
 #
 # Supported configs (both use TOPReward, both need 3 GPUs):
 #   yam_ppo_openpi           — 3 GPUs (actor + rollout + VLM TOPReward on Beaker)
@@ -42,8 +41,9 @@ usage() {
     cat <<'EOF'
 Usage: bash scripts/submit_yam_beaker_cluster.sh [OPTIONS]
 
-Submit a Beaker job that starts Ray head with GPUs and idles, waiting for a
-desktop worker to join and run training via join_beaker_cluster.sh.
+Submit a Beaker job that starts Ray head with GPUs and idles, waiting for an
+SSH session or `beaker session attach`-style debugging workflow to run training
+manually inside the container.
 
 Supported configs:
   yam_ppo_openpi             3 GPUs (actor + rollout + VLM TOPReward)
@@ -64,9 +64,10 @@ Options:
 
 After submission:
   1. Check Beaker logs for '=== Tailscale IP ===' to get the container IP
-  2. Join the cluster from your desktop:
-       bash scripts/join_beaker_cluster.sh \
-           --head-ip <tailscale-ip> \
+  2. SSH into the container:
+       ssh shiruic@beaker-0
+  3. Run the single-node marl loop manually:
+       bash scripts/run_yam_marl_training.sh \
            --config yam_ppo_openpi \
            --model-path thomas0829/folding_towel_pi05 \
            --task "pick and place"
@@ -169,7 +170,7 @@ gantry_args=(
     --env "RAY_health_check_failure_threshold=10"
     --env "RAY_health_check_timeout_ms=30000"
     --env-secret "HF_TOKEN=hf_token_shirui"
-    --env-secret "TAILSCALE_AUTHKEY=SHIRUI_TAILSCALE_KEY"
+    --env-secret "TAILSCALE_AUTHKEY=tailscale_authkey_shirui"
 )
 
 [ -n "$BUDGET" ]      && gantry_args+=("--budget" "$BUDGET")
@@ -184,13 +185,13 @@ echo "GPUs:         ${GPUS}"
 echo "Cluster:      ${CLUSTER}"
 echo ""
 echo "The Beaker container will start Ray head and idle."
-echo "No training command is sent — training runs from the desktop."
+echo "No training command is sent — use SSH to run training manually inside the container."
 echo ""
 echo "After job starts:"
 echo "  1. Check logs for '=== Tailscale IP ===' to get the container IP"
-echo "  2. Join from desktop:"
-echo "       bash scripts/join_beaker_cluster.sh \\"
-echo "           --head-ip <tailscale-ip> \\"
+echo "  2. SSH into the container: ssh shiruic@beaker-0"
+echo "  3. Run:"
+echo "       bash scripts/run_yam_marl_training.sh \\"
 echo "           --config ${CONFIG_NAME} \\"
 echo "           --model-path thomas0829/folding_towel_pi05 \\"
 echo "           --task \"pick and place\""

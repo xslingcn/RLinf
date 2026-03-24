@@ -74,6 +74,7 @@ Options:
   --priority PRIORITY   Job priority (default: urgent)
   --interactive         Create an interactive Beaker session with Ray head started and no training.
                         Attach from the cluster with: beaker session attach <session-id>
+                        Then run: bash scripts/run_yam_marl_training.sh --config <name> ...
   --show-logs           Stream Beaker logs after submission
   --allow-dirty         Allow dirty git working directory
   --dry-run             Print command without executing
@@ -230,7 +231,7 @@ if [ -n "$INTERACTIVE" ]; then
         --env "RAY_health_check_failure_threshold=10"
         --env "RAY_health_check_timeout_ms=30000"
         --secret-env "HF_TOKEN=hf_token_shirui"
-        --secret-env "TAILSCALE_AUTHKEY=SHIRUI_TAILSCALE_KEY"
+        --secret-env "TAILSCALE_AUTHKEY=tailscale_authkey_shirui"
         --
         bash -c "${ENTRYPOINT_CMD}"
     )
@@ -263,47 +264,55 @@ else
     # Training mode: existing gantry submission (unchanged)
     # ----------------------------------------------------------------
 
-    # --- Build the training command (runs on head node only) ---
-    TRAIN_CMD="python examples/embodiment/${ENTRY_SCRIPT}"
-    TRAIN_CMD+=" --config-name ${CONFIG_NAME}"
-    TRAIN_CMD+=" cluster.num_nodes=${REPLICAS}"
-
-    # For single replica the placement is baked into the config.
-    # For multiple replicas, distribute actor + rollout across node ranks.
-    if [ "$REPLICAS" -gt 1 ]; then
-        LAST_RANK=$((REPLICAS - 1))
-        ALL_RANKS=$(seq -s, 0 "$LAST_RANK")
-        TRAIN_CMD+=" 'cluster.component_placement.actor.placement=0-${LAST_RANK}'"
-        TRAIN_CMD+=" 'cluster.component_placement.rollout.placement=0-${LAST_RANK}'"
-        if [ "$ENTRY_SCRIPT" = "train_embodied_agent_staged.py" ]; then
-            # WARNING: Multi-replica placement for legacy staged configs is not fully tested.
-            TRAIN_CMD+=" 'cluster.node_groups=[{label: gpu, node_ranks: \"${ALL_RANKS}\"}, {label: beaker_vlm, node_ranks: 0}]'"
-        else
-            TRAIN_CMD+=" 'cluster.node_groups=[{label: gpu, node_ranks: \"${ALL_RANKS}\"}]'"
-        fi
-    fi
-
-    if [ -n "$MODEL_PATH" ]; then
-        TRAIN_CMD+=" actor.model.model_path=${MODEL_PATH}"
-        TRAIN_CMD+=" rollout.model.model_path=${MODEL_PATH}"
-    fi
-
-    TRAIN_CMD+=" 'env.train.task_description=${TASK_DESC}'"
-    TRAIN_CMD+=" 'env.eval.task_description=${TASK_DESC}'"
-
-    for override in "${EXTRA_OVERRIDES[@]+"${EXTRA_OVERRIDES[@]}"}"; do
-        TRAIN_CMD+=" ${override}"
-    done
-
     if [ "$IS_MARL" = true ]; then
-        MARL_REPO_DEFAULT="$(dirname "$REPO_DIR")/marl"
-        MARL_BOOTSTRAP="export MARL_REPO_DIR=\${MARL_REPO_DIR:-${MARL_REPO_DEFAULT}}"
-        MARL_BOOTSTRAP+=" && export MARL_CONFIG_PATH=\${MARL_CONFIG_PATH:-\${MARL_REPO_DIR}/marl.yaml}"
-        MARL_BOOTSTRAP+=" && export MARL_BASE_URL=\${MARL_BASE_URL:-http://127.0.0.1:8080}"
-        MARL_BOOTSTRAP+=" && nohup env CUDA_VISIBLE_DEVICES=2 uv run --project \${MARL_REPO_DIR} --python 3.12 python -m marl --config \${MARL_CONFIG_PATH} --log-level info > \${MARL_REPO_DIR}/marl_server.log 2>&1 &"
-        MARL_BOOTSTRAP+=" && for i in \$(seq 1 60); do curl -fsS \${MARL_BASE_URL}/healthz >/dev/null && break; sleep 2; done"
-        MARL_BOOTSTRAP+=" && curl -fsS \${MARL_BASE_URL}/healthz >/dev/null"
-        TRAIN_CMD="${MARL_BOOTSTRAP} && ${TRAIN_CMD}"
+        quote_arg() {
+            printf '%q' "$1"
+        }
+
+        TRAIN_CMD="bash scripts/run_yam_marl_training.sh"
+        TRAIN_CMD+=" --config $(quote_arg "$CONFIG_NAME")"
+        if [ -n "$MODEL_PATH" ]; then
+            TRAIN_CMD+=" --model-path $(quote_arg "$MODEL_PATH")"
+        fi
+        TRAIN_CMD+=" --task $(quote_arg "$TASK_DESC")"
+        if [ ${#EXTRA_OVERRIDES[@]} -gt 0 ]; then
+            TRAIN_CMD+=" --"
+            for override in "${EXTRA_OVERRIDES[@]}"; do
+                TRAIN_CMD+=" $(quote_arg "$override")"
+            done
+        fi
+    else
+        # --- Build the training command (runs on head node only) ---
+        TRAIN_CMD="python examples/embodiment/${ENTRY_SCRIPT}"
+        TRAIN_CMD+=" --config-name ${CONFIG_NAME}"
+        TRAIN_CMD+=" cluster.num_nodes=${REPLICAS}"
+
+        # For single replica the placement is baked into the config.
+        # For multiple replicas, distribute actor + rollout across node ranks.
+        if [ "$REPLICAS" -gt 1 ]; then
+            LAST_RANK=$((REPLICAS - 1))
+            ALL_RANKS=$(seq -s, 0 "$LAST_RANK")
+            TRAIN_CMD+=" 'cluster.component_placement.actor.placement=0-${LAST_RANK}'"
+            TRAIN_CMD+=" 'cluster.component_placement.rollout.placement=0-${LAST_RANK}'"
+            if [ "$ENTRY_SCRIPT" = "train_embodied_agent_staged.py" ]; then
+                # WARNING: Multi-replica placement for legacy staged configs is not fully tested.
+                TRAIN_CMD+=" 'cluster.node_groups=[{label: gpu, node_ranks: \"${ALL_RANKS}\"}, {label: beaker_vlm, node_ranks: 0}]'"
+            else
+                TRAIN_CMD+=" 'cluster.node_groups=[{label: gpu, node_ranks: \"${ALL_RANKS}\"}]'"
+            fi
+        fi
+
+        if [ -n "$MODEL_PATH" ]; then
+            TRAIN_CMD+=" actor.model.model_path=${MODEL_PATH}"
+            TRAIN_CMD+=" rollout.model.model_path=${MODEL_PATH}"
+        fi
+
+        TRAIN_CMD+=" 'env.train.task_description=${TASK_DESC}'"
+        TRAIN_CMD+=" 'env.eval.task_description=${TASK_DESC}'"
+
+        for override in "${EXTRA_OVERRIDES[@]+"${EXTRA_OVERRIDES[@]}"}"; do
+            TRAIN_CMD+=" ${override}"
+        done
     fi
 
     # --- Build the entrypoint ---

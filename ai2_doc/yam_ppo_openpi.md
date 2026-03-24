@@ -8,9 +8,9 @@ This config runs:
 - PPO + GAE
 - π₀.5 / OpenPI policy
 - TOPReward dense reward
-- no VLM subtask planning (`subtask_interval: 0`)
+- no subtask planning (`marl.planner.interval: 0`)
 
-For the variant that also enables VLM subtask planning, see
+For the variant that also enables subtask planning, see
 [yam_ppo_openpi_topreward](yam_ppo_openpi_topreward.md).
 
 ## Topology
@@ -19,42 +19,28 @@ Canonical topology:
 
 - Beaker runs all Ray workers
 - the desktop runs only `RobotServer`
-- `RemoteEnv` connects over gRPC through the reverse SSH tunnel
+- `RemoteYamEnvWorker` connects over gRPC through the reverse SSH tunnel
 
 Main component placement:
 
 - GPU 0: actor
 - GPU 1: rollout
-- GPU 2: VLM planner / TOPReward
-- CPU: `RemoteEnv`
+- GPU 2: `marl` sidecar
+- CPU: `RemoteYamEnvWorker`
 
-## VLM Planner Placement
+## marl Assumptions
 
-`train_embodied_agent_staged.py` now launches the VLM planner through RLinf's
-placement stack instead of as a standalone Ray `num_gpus=1` actor. This matters
-because actor and rollout workers were already using RLinf-managed GPU
-isolation, while the older VLM planner path only used a best-effort
-`CUDA_VISIBLE_DEVICES` heuristic.
+The current baseline does not use the old in-process `VLMPlannerWorker` path.
+Instead:
 
-Current behavior:
+- `marl` runs as a local sidecar on GPU 2
+- planner and TOPReward share one Qwen3-VL runtime inside `marl`
+- RLinf owns reward-delta logic and replanning cadence
+- planner inputs are richer than the legacy worker path: multi-view images and
+  `memory_text` are both intentional
 
-- actor, rollout, and VLM planner all use RLinf placement-backed GPU isolation
-- the default YAM single-node layout still resolves to GPU 0 for actor, GPU 1
-  for rollout, and GPU 2 for the VLM planner
-- the planner uses the `beaker_vlm` node group by default
-
-Planner placement overrides:
-
-```yaml
-vlm_planner:
-  # Optional explicit GPU index inside the planner node group.
-  placement: 2
-  # Optional node-group override. Defaults to "beaker_vlm".
-  node_group: "beaker_vlm"
-```
-
-Use an explicit `vlm_planner.placement` override if you want to pin the VLM to
-a different GPU than the default inferred one.
+See [marl_alignment_findings](marl_alignment_findings.md) for prompt alignment
+details.
 
 ## Standard Workflow
 
@@ -95,9 +81,6 @@ rollout:
 actor:
   model:
     model_path: "/path/to/RLinf-Pi05-SFT"
-
-vlm_planner:
-  model_path: "Qwen/Qwen3-VL-8B-Instruct"
 ```
 
 Task description:
@@ -111,34 +94,37 @@ env:
 Reward / planner settings:
 
 ```yaml
-env:
-  train:
-    top_reward_enabled: True
-    subtask_interval: 0
+marl:
+  topreward:
+    enabled: true
+  planner:
+    interval: 0
 ```
 
 ## Local Simulated Desktop Mode
 
-`train_embodied_agent_staged.py` now supports simulating the remote desktop
-input path locally. This keeps the normal `RemoteEnv -> gRPC -> RobotServer`
-flow, but the training process starts a local dummy `RobotServer`
-automatically, so no separate desktop machine or reverse SSH tunnel is needed.
+`train_embodied_agent_marl.py` supports simulating the remote desktop input
+path locally. This keeps the normal `RemoteEnv -> gRPC -> RobotServer` flow,
+but the training process starts a local dummy `RobotServer` automatically, so
+no separate desktop machine or reverse SSH tunnel is needed.
 
 Enable it with:
 
 ```bash
-python examples/embodiment/train_embodied_agent_staged.py \
-    --config-path examples/embodiment/config \
-    --config-name yam_ppo_openpi \
+bash scripts/run_yam_marl_training.sh \
+    --config yam_ppo_openpi \
+    --model-path /path/to/RLinf-Pi05-SFT \
+    -- \
     env.remote_desktop_simulation.enabled=true
 ```
 
 Optional overrides:
 
 ```bash
-python examples/embodiment/train_embodied_agent_staged.py \
-    --config-path examples/embodiment/config \
-    --config-name yam_ppo_openpi \
+bash scripts/run_yam_marl_training.sh \
+    --config yam_ppo_openpi \
+    --model-path /path/to/RLinf-Pi05-SFT \
+    -- \
     env.remote_desktop_simulation.enabled=true \
     env.remote_desktop_simulation.env_config_path=/path/to/yam_pi05_follower.yaml \
     env.train.remote_server_url=localhost:50051 \
@@ -165,8 +151,10 @@ Notes:
 
 ## Related Docs
 
+- [yam_desktop_smoke](yam_desktop_smoke.md)
 - [quickstart](quickstart.md)
 - [training_architecture](training_architecture.md)
 - [network_infrastructure](network_infrastructure.md)
+- [marl_alignment_findings](marl_alignment_findings.md)
 - [openpi_joint_logprob](openpi_joint_logprob.md)
 - [openpi_nan_gradients](openpi_nan_gradients.md)

@@ -5,20 +5,21 @@ and scripts reference for YAM training on Beaker. For the end-to-end workflow
 and prerequisites, see [quickstart](quickstart.md). For algorithm and config
 details, see [training_architecture](training_architecture.md).
 
-## Topology 1: Beaker-Driven (RemoteEnv)
+## Topology 1: Beaker-Driven (`RemoteYamEnvWorker` + `marl`)
 
 ```
     Robot Desktop                          Beaker Container
     (Tailscale IP: 100.x.y.z)             (Tailscale IP: 100.a.b.c)
 
     ┌──────────────┐     reverse           ┌──────────────────┐
-    │ RobotServer  │◄── SSH tunnel ────────│ RemoteEnv        │
-    │ (gRPC :50051)│   desktop initiates   │ (gRPC client)    │
+    │ RobotServer  │◄── SSH tunnel ────────│ RemoteYamEnv     │
+    │ (gRPC :50051)│   desktop initiates   │ Worker           │
     │              │   ssh -R to container │                  │
     │ YAMEnv       │                       │ Ray Cluster      │
     │  └ Robot HW  │                       │  ├ Actor  (GPU0) │
     │  └ Cameras   │                       │  ├ Rollout(GPU1) │
-    └──────────────┘                       │  └ VLM    (GPU2) │
+    │              │                       │  ├ marl   (GPU2) │
+    └──────────────┘                       │  └ Env    (CPU)  │
                                            └──────────────────┘
 ```
 
@@ -89,7 +90,8 @@ Tailscale has no kernel TUN interface and cannot route TCP to `100.x.x.x`. See
 as a reference but not validated end-to-end on the current AI2 Beaker setup.
 
 > **Incompatible with current canonical configs.** `yam_ppo_openpi` and
-> `yam_ppo_openpi_topreward` both use `env/remote_yam` (RemoteEnv) and
+> `yam_ppo_openpi_topreward` both use `env/remote_yam` with the marl-backed
+> `RemoteYamEnvWorker`, and
 > `cluster.num_nodes: 1` — they are designed for Topology 1.
 > For standard YAM experiments, use Topology 1 (`submit_yam_training.sh`).
 
@@ -112,8 +114,8 @@ when no CAN interfaces are present (dummy mode or non-robot machine).
 |---|---|---|
 | **Actor** | GPU 0 | Policy training (FSDP) |
 | **Rollout** | GPU 1 | Action inference (π₀.5 requires a dedicated GPU) |
-| **VLM Planner** | GPU 2 | TOPReward scoring (both configs); subtask planning only when `subtask_interval > 0` |
-| **RemoteEnv** | CPU | gRPC client connecting to `localhost:50051` (via the SSH tunnel) |
+| **marl sidecar** | GPU 2 | Local planner + TOPReward service |
+| **RemoteYamEnvWorker** | CPU | gRPC client to `localhost:50051` plus local HTTP client to `marl` |
 
 ## Network Stack
 
@@ -187,7 +189,8 @@ port forward, traffic flows bidirectionally through the single SSH connection.
 
 ### gRPC Protocol
 
-Communication between `RemoteEnv` (client) and `RobotServer` (server) uses
+Communication between `RemoteYamEnvWorker`'s gRPC client and `RobotServer`
+uses
 gRPC with Protocol Buffers. The proto definition lives at
 `rlinf/envs/yam/remote/proto/robot_env.proto`.
 
@@ -201,7 +204,7 @@ For `remote_yam.yaml` Hydra config details (`grpc_timeout`, `auto_reset`,
 | `GetSpaces` | client → server | Fetch observation/action space metadata |
 | `Reset` | client → server | Reset environment, return initial observation |
 | `ChunkStep` | client → server | Send action chunk, receive step results |
-| `SetTaskDescription` | client → server | Sync task string to server. Called once at `RemoteEnv.__init__` with the training-config task description, and again by the VLM subtask planner each time it generates a new subtask. Client always uses its locally-tracked `self._task_description` for obs regardless of what the server proto returns. |
+| `SetTaskDescription` | client → server | Sync task string to server. Called once during client init with the training-config task description, and again whenever the marl planner generates a new subtask. |
 | `Close` | client → server | Graceful shutdown |
 
 **Observation encoding:**
@@ -257,7 +260,7 @@ bash scripts/start_robot_server.sh \
 ```
 
 The training config does not need any changes for dummy mode — `is_dummy` is a
-server-side setting that `RemoteEnv` does not read.
+server-side setting that the remote env client does not read.
 
 ## Ray Cluster on Beaker
 
@@ -317,13 +320,13 @@ Use `--workspace <beaker-workspace>` to override the default `ai2/molmo-act`
 workspace.
 
 ```bash
-# TOPReward only, no subtask planning (3 GPUs: actor GPU 0, rollout GPU 1, VLM GPU 2)
+# TOPReward only, no subtask planning (3 GPUs: actor GPU 0, rollout GPU 1, marl GPU 2)
 bash scripts/submit_yam_training.sh \
     --config yam_ppo_openpi \
     --model-path /path/to/pi05_checkpoint \
     --dry-run
 
-# TOPReward + subtask planning (3 GPUs: actor GPU 0, rollout GPU 1, VLM GPU 2)
+# TOPReward + subtask planning (3 GPUs: actor GPU 0, rollout GPU 1, marl GPU 2)
 bash scripts/submit_yam_training.sh \
     --config yam_ppo_openpi_topreward \
     --model-path /path/to/pi05_checkpoint \
@@ -345,8 +348,8 @@ bash scripts/submit_yam_training.sh \
 
 **What the script does (training mode):**
 
-1. Auto-detects config type (`yam_ppo_openpi` exact / `*topreward*` / `*staged*` → 3 GPUs + `train_embodied_agent_staged.py`)
-2. Builds Hydra training command (placement is baked into config defaults for single replica)
+1. Auto-detects config type (`yam_ppo_openpi` / `yam_ppo_openpi_topreward` / `*marl*` → 3 GPUs + `train_embodied_agent_marl.py`)
+2. Routes canonical YAM marl configs through `scripts/run_yam_marl_training.sh`
 3. Base64-encodes the training command (avoids nested shell quoting issues)
 4. Builds entrypoint that installs Tailscale, starts Ray, runs training
 5. Submits via `gantry run` with the correct Beaker image, secrets, and mounts
@@ -357,7 +360,7 @@ bash scripts/submit_yam_training.sh \
 2. Builds the same Beaker-side startup flow as `submit_yam_beaker_cluster.sh`: Tailscale → Tailscale-IP alias on `lo` when available → install → Ray head startup
 3. Uses the shared `ray_utils/start_ray_beaker.sh --entrypoint` path, but starts an interactive shell on the head node instead of idling forever
 4. Submits via `beaker session create --remote --bare`
-5. User attaches with `beaker session attach <session-id>` and drives training manually
+5. User attaches with `beaker session attach <session-id>` and drives training manually, typically via `scripts/run_yam_marl_training.sh`
 6. The local machine running `beaker session create` must have a default SSH key (for example `~/.ssh/id_ed25519`) so Beaker can attach
 
 **Key options:**
@@ -428,7 +431,7 @@ bash scripts/start_robot_server.sh \
 Because all Beaker Tailscale nodes register the hostname `beaker-<replica-rank>`,
 a new Beaker job always comes up as `beaker-0`. `autossh` will reconnect the
 tunnel to the new job's container without any manual intervention. The robot
-server never needs to restart. `RemoteEnv`'s `grpc_connect_timeout: 300 s`
+server never needs to restart. The remote env client's `grpc_connect_timeout: 300 s`
 (5-minute retry window) provides the window for the tunnel to reconnect after
 job submission.
 
@@ -447,13 +450,14 @@ job submission.
 
 ### `scripts/submit_yam_beaker_cluster.sh`
 
-*(Desktop-Driven topology — Topology 2; see [status note](#topology-2-desktop-driven-direct-yamenv))*
+*(Idle single-node Beaker debugging path for Topology 1.)*
 
 Submits a Beaker job that starts Ray head with GPUs and **idles** — no training
-command. The desktop then joins and drives training via `join_beaker_cluster.sh`.
+command. You then SSH into the container and run the marl-backed training loop
+manually.
 
 ```bash
-# TOPReward only, no subtask planning (3 GPUs, idle, waiting for desktop)
+# TOPReward only, no subtask planning (3 GPUs, idle, waiting for SSH/manual training)
 bash scripts/submit_yam_beaker_cluster.sh \
     --config yam_ppo_openpi \
     --dry-run
@@ -470,6 +474,7 @@ bash scripts/submit_yam_beaker_cluster.sh \
    this, the desktop raylet is marked dead within 30 s of joining
 5. Calls `start_ray_beaker.sh --entrypoint` with no `--train-cmd` → Ray head
    starts and blocks indefinitely (no training loop)
+6. Prints the follow-up manual command using `scripts/run_yam_marl_training.sh`
 
 | Option | Default | Description |
 |---|---|---|

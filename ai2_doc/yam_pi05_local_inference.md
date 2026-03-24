@@ -12,6 +12,10 @@ This workflow runs:
 - `640x360@30` RealSense inputs with raw gRPC image transport
 - no Ray, no Beaker, no reverse SSH tunnel in the default path
 
+If you want to validate the current RLinf `RemoteYamEnvWorker` integration
+rather than the standalone local inference client, see
+`ai2_doc/yam_desktop_smoke.md`.
+
 The current recommended env config for this workflow is:
 `examples/embodiment/config/env/yam_pi05_follower.yaml`.
 
@@ -300,6 +304,7 @@ If behavior is numerically stable but task performance is poor:
 
 ## Related Docs
 
+- [yam_desktop_smoke](yam_desktop_smoke.md)
 - [quickstart](quickstart.md)
 - [network_infrastructure](network_infrastructure.md)
 - [training_architecture](training_architecture.md)
