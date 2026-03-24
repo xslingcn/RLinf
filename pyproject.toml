@@ -121,7 +121,7 @@ xsquare_turtle2 = [
 [tool.uv.sources]
 yam_realtime = { path = "third_party/yam_realtime", editable = true }
 i2rt = { path = "third_party/i2rt", editable = true }
-openpi = { git = "https://github.com/xslingcn/openpi", rev = "54cbaee6ae0c010a1ed431871cdaa8f4684ac709" }
+openpi = { git = "https://github.com/RLinf/openpi", rev = "54cbaee6ae0c010a1ed431871cdaa8f4684ac709" }
 
 [tool.uv]
 prerelease = "allow"
