@@ -32,39 +32,18 @@ dependencies = [
     # Core System
     # These are the dependencies of the core scheduler
     "ray[default]>=2.47.0",
-    "torch>=2.5.0,<=2.9.1",
+    "torch>=2.10.0,<2.11",
     "hydra-core",
-    "numpy>=2.0.0,<2.3.0",
+    "numpy>=2.2.6,<2.3.0",
     # Data processing
     "datasets",
     "torchdata",
     "scipy",
     # Utilities
     "accelerate",
-    "debugpy",
     "einops",
-    "nvitop",
-    "pybind11",
-    "setuptools",
-    "ninja",
-    "pytest",
-    "gsutil",
-    "ruff",
-    "pre-commit",
     "liger_kernel; sys_platform == 'linux' and platform_machine == 'x86_64'",
-    "uv",
-    "pip",
     "huggingface_hub",
-    "icmplib",
-    "pyrealsense2; sys_platform == 'linux' and platform_machine == 'x86_64'",
-    # YAM robot environment
-    "gymnasium",
-    "yam_realtime",
-    "i2rt",
-    # Logging
-    "wandb<0.25.1",
-    "tensorboard",
-    "beaker-gantry>=1.16.0",
 ]
 
 [project.urls]
@@ -75,13 +54,27 @@ Documentation = "https://rlinf.readthedocs.io/"
 
 [project.optional-dependencies]
 dev = [
+    "debugpy",
+    "nvitop",
     "pre-commit",
+    "pytest",
+    "ruff",
 ]
 embodied = [
-    "lerobot[pi]==0.5.0",
+    "beaker-gantry>=1.16.0",
+    "gym",
+    "gymnasium",
     "grpcio>=1.73.1",
     "grpcio-tools>=1.73.1",
-    "gym",
+    "i2rt",
+    "icmplib",
+    "lerobot[pi]==0.5.0",
+    "ninja",
+    "pybind11",
+    "pyrealsense2; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "tensorboard",
+    "wandb<0.25.1",
+    "yam_realtime",
 ]
 franka = [
     "pyyaml",
