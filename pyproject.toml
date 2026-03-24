@@ -8,7 +8,7 @@ version = "0.2.0"
 authors = [{ name = "RLinf Contributors" }]
 description = "Reinforcement Learning Infrastructure for Embodied AI"
 readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">=3.11,<=3.11.14"
+requires-python = ">=3.12,<3.13"
 license = {file = "LICENSE"}
 keywords = [
     "reinforcement-learning",
@@ -24,7 +24,7 @@ classifiers = [
     "Environment :: GPU :: NVIDIA CUDA :: 12 :: 12.4",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 
 
@@ -34,7 +34,7 @@ dependencies = [
     "ray[default]>=2.47.0",
     "torch>=2.5.0,<=2.9.1",
     "hydra-core",
-    "numpy>=1.22.4,<2.0.0",
+    "numpy>=2.0.0,<2.3.0",
     # Data processing
     "datasets",
     "torchdata",
@@ -78,16 +78,10 @@ dev = [
     "pre-commit",
 ]
 embodied = [
-    "openpi",
-    "transformers==4.53.2",
-    "peft",
-    "timm",
-    "imageio[ffmpeg]",
-    "gymnasium",
+    "lerobot[pi]",
+    "grpcio>=1.73.1",
+    "grpcio-tools>=1.73.1",
     "gym",
-    "grpcio>=1.60.0",
-    "grpcio-tools>=1.60.0",
-    "qwen-vl-utils",
 ]
 franka = [
     "pyyaml",
@@ -121,7 +115,7 @@ xsquare_turtle2 = [
 [tool.uv.sources]
 yam_realtime = { path = "third_party/yam_realtime", editable = true }
 i2rt = { path = "third_party/i2rt", editable = true }
-openpi = { git = "https://github.com/RLinf/openpi", rev = "54cbaee6ae0c010a1ed431871cdaa8f4684ac709" }
+lerobot = { path = "../lerobot", editable = true }
 
 [tool.uv]
 prerelease = "allow"
@@ -133,20 +127,19 @@ conflicts = [
     ],
 ]
 override-dependencies = [
-    "torch==2.9.1",
-    "torchvision==0.24.1",
-    "torchaudio==2.9.1",
-    "torchcodec==0.2",
+    "torch==2.10.0",
+    "torchvision==0.25.0",
     "xgrammar==0.1.19",
     "uvloop==0.21.0",
     "tensorflow-addons==0.23.0",
     "setuptools>=69.5.1,<75.9",
-    "datasets==3.6.0",
-    "peft==0.11.1",
-    "transformers==4.53.2",
-    "tokenizers==0.21.1",
-    "huggingface_hub==0.36.2",
-    "numpy==1.26.4",
+    "datasets==4.8.4",
+    "accelerate==1.13.0",
+    "transformers==5.3.0",
+    "tokenizers==0.22.2",
+    "huggingface_hub==1.7.2",
+    "numpy==2.2.6",
+    "safetensors==0.7.0",
     "fsspec==2025.3.0",
 ]
 
@@ -164,7 +157,7 @@ rlinf = ["**/*.yaml", "**/*.yml"]
 [tool.ruff]
 line-length = 88
 indent-width = 4
-target-version = "py311"
+target-version = "py312"
 extend-exclude = ["third_party", "rlinf/envs/yam/remote/proto"]
 
 [tool.ruff.lint]

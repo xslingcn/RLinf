@@ -77,6 +77,7 @@ def _timed_observation(timestep: int, values: list[float], must_go: bool = False
 def test_build_arg_parser_defaults_match_generic_local_inference_workflow():
     args = infer.build_arg_parser().parse_args([])
 
+    assert args.model_type == "lerobot_pi05"
     assert args.config_name == "pi05_libero"
     assert args.action_dim is None
     assert args.action_horizon == 10
@@ -87,6 +88,20 @@ def test_build_arg_parser_defaults_match_generic_local_inference_workflow():
     assert args.return_home_steps == 50
     assert args.grpc_timeout == 120.0
     assert args.max_episode_steps == 10000
+
+
+def test_parse_camera_bindings_parses_repeatable_cli_flag():
+    parsed = infer.parse_camera_bindings(
+        [
+            "observation.images.top=main_images",
+            "observation.images.left=wrist_images[0]",
+        ]
+    )
+
+    assert parsed == {
+        "observation.images.top": "main_images",
+        "observation.images.left": "wrist_images[0]",
+    }
 
 
 def test_close_inference_session_resets_then_enters_zero_torque():

@@ -21,7 +21,12 @@ from rlinf.scheduler import Worker
 def get_model(cfg: DictConfig):
     model_type = get_supported_model(cfg.model_type)
     if model_type == SupportedModel.OPENPI:
-        from rlinf.models.embodiment.openpi import get_model
+        raise NotImplementedError(
+            "The OpenPI model lane is disabled in this RLinf-lerobot worktree. "
+            "Use model_type='lerobot_pi05' instead."
+        )
+    elif model_type == SupportedModel.LEROBOT_PI05:
+        from rlinf.models.embodiment.lerobot_pi05 import get_model
     else:
         return None
 
@@ -32,6 +37,10 @@ def get_model(cfg: DictConfig):
         model = model.to(Worker.torch_device_type)
 
     if cfg.is_lora:
+        if model_type == SupportedModel.LEROBOT_PI05:
+            raise NotImplementedError(
+                "LoRA is not supported for lerobot_pi05 in inference-only mode."
+            )
         from peft import LoraConfig, PeftModel, get_peft_model
 
         if not hasattr(cfg, "lora_path") or cfg.lora_path is None:

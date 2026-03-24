@@ -26,14 +26,14 @@ Prerequisites:
 Usage::
 
     python examples/embodiment/infer_embodied_agent.py \
-        --model-path /path/to/openpi-checkpoint \
-        --config-name pi05_libero \
+        --model-type lerobot_pi05 \
+        --model-path /path/to/lerobot-pretrained-model \
         --task-description "pick up the object"
 
     # With dummy robot server (no real hardware):
     python examples/embodiment/infer_embodied_agent.py \
-        --model-path /path/to/openpi-checkpoint \
-        --config-name pi05_libero \
+        --model-type lerobot_pi05 \
+        --model-path /path/to/lerobot-pretrained-model \
         --server-url localhost:50051 \
         --task-description "pick up the object" \
         --max-episodes 3
@@ -59,6 +59,7 @@ import torch
 from omegaconf import OmegaConf
 
 from rlinf.envs.yam.remote.proto import robot_env_pb2, robot_env_pb2_grpc
+from rlinf.models import get_model as get_embodied_model
 from rlinf.utils.logging import get_logger
 
 logger = get_logger()
@@ -275,6 +276,7 @@ def proto_to_obs(proto_obs, h: int, w: int) -> dict:
 
 
 def load_model(
+    model_type: str,
     model_path: str,
     config_name: str,
     action_dim: int,
@@ -283,39 +285,63 @@ def load_model(
     num_steps: int,
     num_images_in_input: int,
     discrete_state_input: bool,
+    camera_bindings: dict[str, str] | None = None,
 ):
-    """Load the OpenPI model with transforms."""
-    from rlinf.models.embodiment.openpi import get_model
+    """Load the configured embodied model for local inference."""
+    if model_type == "openpi":
+        raise NotImplementedError(
+            "OpenPI inference is disabled in this RLinf-lerobot worktree. "
+            "Use --model-type lerobot_pi05."
+        )
+    if model_type == "lerobot_pi05":
+        cfg = OmegaConf.create(
+            {
+                "model_path": model_path,
+                "model_type": "lerobot_pi05",
+                "precision": "bf16",
+                "is_lora": False,
+                "lerobot_pi05": {
+                    "device": "cuda" if torch.cuda.is_available() else "cpu",
+                    "camera_bindings": camera_bindings or {},
+                    "missing_camera": "error",
+                    "override_num_inference_steps": num_steps,
+                    "truncate_action_chunk_to": action_chunk,
+                },
+            }
+        )
+        logger.info(f"Loading LeRobot pi05 model from {model_path} ...")
+        if camera_bindings:
+            logger.info(f"LeRobot camera bindings: {camera_bindings}")
+    else:
+        raise ValueError(f"Unsupported model_type={model_type!r}")
 
-    openpi_overrides = get_openpi_runtime_overrides(
-        config_name=config_name,
-        action_dim=action_dim,
-        action_horizon=action_horizon,
-        action_chunk=action_chunk,
-        num_steps=num_steps,
-        num_images_in_input=num_images_in_input,
-        discrete_state_input=discrete_state_input,
-    )
-    cfg = OmegaConf.create(
-        {
-            "model_path": model_path,
-            "model_type": "openpi",
-            "add_value_head": False,
-            "num_action_chunks": 10,
-            "action_dim": action_dim,
-            "num_steps": num_steps,
-            "openpi": openpi_overrides,
-        }
-    )
-
-    logger.info(f"Loading model from {model_path} ...")
-    logger.info(f"OpenPI runtime overrides: {openpi_overrides}")
-    model = get_model(cfg)
+    model = get_embodied_model(cfg)
     model.eval()
     if torch.cuda.is_available():
         model = model.cuda()
     logger.info("Model loaded.")
     return model
+
+
+def parse_camera_bindings(bindings: list[str] | None) -> dict[str, str]:
+    """Parse CLI camera bindings of the form bundle_key=env_source."""
+    if not bindings:
+        return {}
+    parsed = {}
+    for binding in bindings:
+        if "=" not in binding:
+            raise ValueError(
+                f"Invalid --camera-binding {binding!r}. Expected bundle_key=env_source."
+            )
+        bundle_key, env_source = binding.split("=", 1)
+        bundle_key = bundle_key.strip()
+        env_source = env_source.strip()
+        if not bundle_key or not env_source:
+            raise ValueError(
+                f"Invalid --camera-binding {binding!r}. Expected bundle_key=env_source."
+            )
+        parsed[bundle_key] = env_source
+    return parsed
 
 
 def reset_robot_on_exit(stub, grpc_timeout: float) -> bool:
@@ -831,9 +857,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
         description="Local inference for embodied policy via RobotServer"
     )
     parser.add_argument(
+        "--model-type",
+        type=str,
+        default="lerobot_pi05",
+        choices=["lerobot_pi05", "openpi"],
+        help="Embodied model family to load.",
+    )
+    parser.add_argument(
         "--model-path",
         type=str,
-        default="checkpoints/torch/pi05_base",
+        default="/home/xsling/Model/folding_towel_pi05",
         help="HuggingFace model ID or local path",
     )
     parser.add_argument(
@@ -889,6 +922,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=int,
         default=10,
         help="Number of denoising steps",
+    )
+    parser.add_argument(
+        "--camera-binding",
+        action="append",
+        default=None,
+        help=(
+            "LeRobot camera binding in the form "
+            "'observation.images.top=main_images' or "
+            "'observation.images.left=wrist_images[0]'. Repeat per camera."
+        ),
     )
     parser.add_argument(
         "--max-episode-steps",
@@ -959,7 +1002,9 @@ def main():
 
     # Load model
     action_dim = args.action_dim if args.action_dim is not None else spaces.action_dim
+    camera_bindings = parse_camera_bindings(args.camera_binding)
     model = load_model(
+        args.model_type,
         args.model_path,
         args.config_name,
         action_dim,
@@ -968,6 +1013,7 @@ def main():
         args.num_steps,
         args.num_images_in_input,
         args.discrete_state_input,
+        camera_bindings=camera_bindings,
     )
     if sys.stdin.isatty():
         logger.info(

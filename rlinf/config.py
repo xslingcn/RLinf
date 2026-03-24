@@ -33,6 +33,7 @@ logging.getLogger().setLevel(logging.INFO)
 class SupportedModel(Enum):
     # Embodied models
     OPENPI = ("openpi", "embodied")
+    LEROBOT_PI05 = ("lerobot_pi05", "embodied")
 
     # Sft models
     QWEN2_5_VL_SFT = ("qwen2.5_vl", "sft")

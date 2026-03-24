@@ -14,8 +14,14 @@
 
 from pathlib import Path
 
+import pytest
 import torch
 from transformers import PaliGemmaConfig, PaliGemmaForConditionalGeneration
+
+pytest.skip(
+    "OpenPI lane is disabled in the RLinf-lerobot worktree.",
+    allow_module_level=True,
+)
 
 from rlinf.models.embodiment.openpi import (
     _get_model_weight_paths,
