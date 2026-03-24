@@ -1,3 +1,17 @@
+# Copyright 2026 Shirui Chen
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import annotations
 
 import glob
@@ -8,6 +22,8 @@ from safetensors.torch import load_file
 
 from rlinf.models.embodiment.pi05.adarms_vendor import enable_pi05_adarms_expert
 from rlinf.models.embodiment.pi05.inference_adapter import (
+    PI05InferenceAdapter,
+    PI05PolicyAdapter,
     _build_config,
     _normalize_model_state_dict_keys,
 )
@@ -32,6 +48,10 @@ def test_vendored_transformers_modules_import_from_rlinf_namespace() -> None:
     assert "rlinf/vendor/transformers_pi05" in gemma_mod.__file__
     assert "rlinf/vendor/transformers_pi05" in paligemma_mod.__file__
     assert "rlinf/vendor/transformers_pi05" in siglip_mod.__file__
+
+
+def test_pi05_inference_adapter_is_kept_as_compatibility_alias() -> None:
+    assert PI05InferenceAdapter is PI05PolicyAdapter
 
 
 def test_vendored_pi05_core_loads_real_checkpoint_cleanly() -> None:
