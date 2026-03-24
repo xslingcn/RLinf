@@ -6,23 +6,10 @@ export REPO_PATH=$(dirname $(dirname "$EMBODIED_PATH"))
 export MUJOCO_GL="egl"
 export PYOPENGL_PLATFORM="egl"
 
-export ROBOTWIN_PATH=${ROBOTWIN_PATH:-"/path/to/RoboTwin"}
-export PYTHONPATH=${REPO_PATH}:${ROBOTWIN_PATH}:$PYTHONPATH
-
-# Base path to the BEHAVIOR dataset, which is the BEHAVIOR-1k repo's dataset folder
-# Only required when running the behavior experiment.
-export OMNIGIBSON_DATA_PATH=$OMNIGIBSON_DATA_PATH
-export OMNIGIBSON_DATASET_PATH=${OMNIGIBSON_DATASET_PATH:-$OMNIGIBSON_DATA_PATH/behavior-1k-assets/}
-export OMNIGIBSON_KEY_PATH=${OMNIGIBSON_KEY_PATH:-$OMNIGIBSON_DATA_PATH/omnigibson.key}
-export OMNIGIBSON_ASSET_PATH=${OMNIGIBSON_ASSET_PATH:-$OMNIGIBSON_DATA_PATH/omnigibson-robot-assets/}
-export OMNIGIBSON_HEADLESS=${OMNIGIBSON_HEADLESS:-1}
-# Base path to Isaac Sim, only required when running the behavior experiment.
-export ISAAC_PATH=${ISAAC_PATH:-/path/to/isaac-sim}
-export EXP_PATH=${EXP_PATH:-$ISAAC_PATH/apps}
-export CARB_APP_PATH=${CARB_APP_PATH:-$ISAAC_PATH/kit}
+export PYTHONPATH=${REPO_PATH}:$PYTHONPATH
 
 if [ -z "$1" ]; then
-    CONFIG_NAME="maniskill_ppo_openvlaoft"
+    CONFIG_NAME="yam_ppo_openpi_topreward"
 else
     CONFIG_NAME=$1
 fi

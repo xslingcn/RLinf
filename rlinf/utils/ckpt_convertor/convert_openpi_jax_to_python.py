@@ -16,7 +16,7 @@
 # middle_file:
 #   params not in decoder: io.safetensors
 #   params in decoder layer x: x.safetensors
-#   use megatron name and style (fuse glu fc1)
+#   follow upstream fused projection naming/style
 
 """
 Load a JAX model and print all parameter keys, with optional conversion to PyTorch.

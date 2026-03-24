@@ -68,7 +68,7 @@ After submission:
        bash scripts/join_beaker_cluster.sh \
            --head-ip <tailscale-ip> \
            --config yam_ppo_openpi \
-           --model-path thomas0829/folding_towel_pi05 \
+           --model-path /path/to/openpi-checkpoint \
            --task "pick and place"
 EOF
     exit 0
@@ -192,7 +192,7 @@ echo "  2. Join from desktop:"
 echo "       bash scripts/join_beaker_cluster.sh \\"
 echo "           --head-ip <tailscale-ip> \\"
 echo "           --config ${CONFIG_NAME} \\"
-echo "           --model-path thomas0829/folding_towel_pi05 \\"
+echo "           --model-path /path/to/openpi-checkpoint \\"
 echo "           --task \"pick and place\""
 echo ""
 

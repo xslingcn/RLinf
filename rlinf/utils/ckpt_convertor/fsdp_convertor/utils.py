@@ -20,44 +20,9 @@ import shutil
 import torch
 from safetensors.torch import save_file
 
-from rlinf.config import SupportedModel
-
-
 def get_model_save_helper(model_type: str):
-    model_type = SupportedModel(model_type)
-
-    _MODEL_SAVE_HELPER_REGISTRY = {
-        SupportedModel.OPENVLA_OFT: openvla_oft_save_helper,
-    }
-
-    if model_type in _MODEL_SAVE_HELPER_REGISTRY:
-        return _MODEL_SAVE_HELPER_REGISTRY[model_type]
-    else:
-        return None
-
-
-def openvla_oft_save_helper(model_state_dict, model_config, save_path, **kwargs):
-    global_step = kwargs.get("global_step", 0)
-    if model_config.get("use_film", False):
-        vision_sd = {
-            k.replace("vision_backbone.", "", 1): v
-            for k, v in model_state_dict.items()
-            if k.startswith("vision_backbone.")
-        }
-        torch.save(
-            vision_sd,
-            os.path.join(save_path, f"vision_backbone--{global_step}_checkpoint.pt"),
-        )
-    if model_config.get("use_proprio", False):
-        proprio_sd = {
-            k.replace("proprio_projector.", "", 1): v
-            for k, v in model_state_dict.items()
-            if k.startswith("proprio_projector.")
-        }
-        torch.save(
-            proprio_sd,
-            os.path.join(save_path, f"proprio_projector--{global_step}_checkpoint.pt"),
-        )
+    del model_type
+    return None
 
 
 def _tensor_nbytes(t: torch.Tensor) -> int:

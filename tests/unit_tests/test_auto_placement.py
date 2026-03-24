@@ -29,41 +29,26 @@ from util import init_global_config
 from workflow import Workflow, traverse_st_cuts
 
 
-def get_mock_config_embodiment(env_type: str):
+def get_mock_config_embodiment():
     mock_cfg = MagicMock()
     mock_cfg.runner.task_type = "embodied"
 
     mock_cfg.data.rollout_batch_size = 1024
-    if env_type == "libero":
-        mock_cfg.data.env_num = 64
-        mock_cfg.profile_data.env_profile_data = {
-            4: 0.61,
-            8: 1.23,
-            16: 2.46,
-            32: 4.66,
-            64: 18.5,
-        }
-        mock_cfg.profile_data.rollout_profile_data = {
-            4: 0.6,
-            8: 1.01,
-            16: 2.12,
-            32: 3.72,
-            64: 15.3,
-        }
-    elif env_type == "maniskill":
-        mock_cfg.data.env_num = 40
-        mock_cfg.profile_data.env_profile_data = {
-            10: 0.8,
-            20: 0.8,
-            30: 0.85,
-            40: 0.85,
-        }
-        mock_cfg.profile_data.rollout_profile_data = {
-            10: 0.4,
-            20: 0.6,
-            30: 0.85,
-            40: 1.15,
-        }
+    mock_cfg.data.env_num = 64
+    mock_cfg.profile_data.env_profile_data = {
+        4: 0.61,
+        8: 1.23,
+        16: 2.46,
+        32: 4.66,
+        64: 18.5,
+    }
+    mock_cfg.profile_data.rollout_profile_data = {
+        4: 0.6,
+        8: 1.01,
+        16: 2.12,
+        32: 3.72,
+        64: 15.3,
+    }
 
     # Model size
     mock_component_placement = MagicMock()
@@ -88,9 +73,7 @@ class TestNode:
 
     @staticmethod
     def _init_mock_global_config():
-        mock_cfg, mock_component_placement, mock_cluster = get_mock_config_embodiment(
-            env_type="libero"
-        )
+        mock_cfg, mock_component_placement, mock_cluster = get_mock_config_embodiment()
         init_global_config(mock_cfg, mock_component_placement, mock_cluster)
 
     def test_node_creation(self):
@@ -220,12 +203,10 @@ class TestWorkflow:
 class TestAutoPlacementWorkerForEmbodiment:
     """Tests for the SchedulerTask class."""
 
-    def test_libero_embodiment(self):
+    def test_embodiment(self):
         """Test SchedulerTask initialization."""
         # Create a mock config
-        mock_cfg, mock_component_placement, mock_cluster = get_mock_config_embodiment(
-            env_type="libero"
-        )
+        mock_cfg, mock_component_placement, mock_cluster = get_mock_config_embodiment()
 
         init_global_config(mock_cfg, mock_component_placement, mock_cluster)
 
@@ -242,29 +223,6 @@ class TestAutoPlacementWorkerForEmbodiment:
         assert res.total_gpu_num == mock_cluster.num_accelerators
         assert isinstance(res, ScheduleResult)
         assert res.mode == ScheduleMode.COLLOCATED
-
-    def test_maniskill_embodiment(self):
-        mock_cfg, mock_component_placement, mock_cluster = get_mock_config_embodiment(
-            env_type="maniskill"
-        )
-
-        init_global_config(mock_cfg, mock_component_placement, mock_cluster)
-
-        graph = {
-            "env": ["env_rollout"],
-            "env_rollout": ["actor"],
-            "actor": [],
-        }
-        auto_placement_worker = AutoPlacementWorker(
-            mock_cfg, mock_component_placement, graph
-        )
-        res = auto_placement_worker.run()
-        assert res.total_gpu_num == mock_cluster.num_accelerators
-        assert res.placement[auto_placement_worker.get_node("actor")] == range(4)
-        assert res.placement[auto_placement_worker.get_node("env")] == range(0, 1)
-        assert res.placement[auto_placement_worker.get_node("env_rollout")] == range(
-            1, 4
-        )
 
 
 if __name__ == "__main__":

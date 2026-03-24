@@ -18,8 +18,8 @@
 # Prerequisites:
 #   1. Robot server + reverse SSH tunnel running on desktop:
 #        bash scripts/start_robot_server.sh \
-#            --config examples/embodiment/config/env/yam_pi05_follower.yaml \
-#            --use-follower-servers [--remote-host beaker-0] [--dummy]
+#            --config /path/to/env.yaml \
+#            [--remote-host beaker-0] [--dummy]
 #   2. gantry installed: pip install beaker-gantry
 #
 # Usage:
@@ -80,13 +80,13 @@ Options:
   --help                Show this help
 
 Extra Hydra overrides can be passed after '--':
-  bash scripts/submit_yam_training.sh --model-path thomas0829/folding_towel_pi05 -- algorithm.update_epoch=2
+  bash scripts/submit_yam_training.sh --model-path /path/to/openpi-checkpoint -- algorithm.update_epoch=2
 
 After submission:
   1. Check Beaker logs until the head node is up on Tailscale
   2. Start robot server with reverse SSH tunnel to the stable hostname:
-     bash scripts/start_robot_server.sh --config .../yam_pi05_follower.yaml \
-           --use-follower-servers --remote-host beaker-0 [--dummy]
+     bash scripts/start_robot_server.sh --config /path/to/env.yaml \
+           --remote-host beaker-0 [--dummy]
 
 Using the stable Tailscale hostname is more reliable than using a one-off IP:
 if the Beaker node is replaced, autossh can reconnect to the new job when it
@@ -396,8 +396,8 @@ else
     echo "After job starts:"
     echo "  1. Check logs for '=== Tailscale IP ===' to get the head node IP"
     echo "  2. Start robot server: bash scripts/start_robot_server.sh \\"
-    echo "       --config examples/embodiment/config/env/yam_pi05_follower.yaml \\"
-    echo "       --use-follower-servers --remote-host <tailscale-ip> [--dummy]"
+    echo "       --config /path/to/env.yaml \\"
+    echo "       --remote-host <tailscale-ip> [--dummy]"
     echo ""
 
     if [ "$DRY_RUN" = "true" ]; then

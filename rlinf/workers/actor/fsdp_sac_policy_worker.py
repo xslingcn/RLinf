@@ -22,7 +22,6 @@ import torch.nn.functional as F
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader
 
-from rlinf.config import SupportedModel
 from rlinf.data.embodied_buffer_dataset import (
     PreloadReplayBufferDataset,
     ReplayBufferDataset,
@@ -359,13 +358,6 @@ class EmbodiedSACFSDPPolicy(EmbodiedFSDPActor):
 
         with torch.no_grad():
             kwargs = {}
-            if SupportedModel(self.cfg.actor.model.model_type) in [
-                SupportedModel.OPENVLA,
-                SupportedModel.OPENVLA_OFT,
-            ]:
-                kwargs["temperature"] = (
-                    self.cfg.algorithm.sampling_params.temperature_train
-                )
             if use_dsrl:
                 kwargs["train"] = True
             next_state_actions, next_state_log_pi, shared_feature = self.model(
@@ -475,8 +467,6 @@ class EmbodiedSACFSDPPolicy(EmbodiedFSDPActor):
 
         curr_obs = batch["curr_obs"]
         kwargs = {}
-        if self.cfg.actor.model.model_type in ["openvla", "openvla_oft"]:
-            kwargs["temperature"] = self.cfg.algorithm.sampling_params.temperature_train
         if self.use_dsrl:
             kwargs["train"] = True
         pi, log_pi, shared_feature = self.model(
@@ -524,10 +514,6 @@ class EmbodiedSACFSDPPolicy(EmbodiedFSDPActor):
         curr_obs = batch["curr_obs"]
         with torch.no_grad():
             kwargs = {}
-            if self.cfg.actor.model.model_type in ["openvla", "openvla_oft"]:
-                kwargs["temperature"] = (
-                    self.cfg.algorithm.sampling_params.temperature_train
-                )
             if self.use_dsrl:
                 kwargs["train"] = True
             _, log_pi, _ = self.model(

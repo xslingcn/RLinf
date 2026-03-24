@@ -14,8 +14,6 @@
 
 """Tests for local simulated desktop support used by staged YAM training."""
 
-from pathlib import Path
-
 import pytest
 from omegaconf import OmegaConf
 
@@ -58,8 +56,16 @@ def test_parse_host_port_requires_host_and_port():
         parse_host_port("localhost")
 
 
-def test_build_simulated_desktop_server_spec_uses_default_local_yam_config():
+def test_build_simulated_desktop_server_spec_requires_explicit_env_config_path():
     cfg = _make_cfg()
+
+    with pytest.raises(RuntimeError, match="requires env_config_path to be set"):
+        build_simulated_desktop_server_spec(cfg)
+
+
+def test_build_simulated_desktop_server_spec_uses_explicit_env_config_path():
+    cfg = _make_cfg()
+    cfg.env.remote_desktop_simulation.env_config_path = "configs/local_env.yaml"
 
     spec = build_simulated_desktop_server_spec(cfg)
 
@@ -68,10 +74,7 @@ def test_build_simulated_desktop_server_spec_uses_default_local_yam_config():
     assert spec.port == 50051
     assert spec.dummy is True
     assert spec.startup_timeout == pytest.approx(12.5)
-    assert spec.env_config_path.endswith(
-        "examples/embodiment/config/env/yam_pi05_follower.yaml"
-    )
-    assert Path(spec.env_config_path).is_absolute()
+    assert spec.env_config_path.endswith("configs/local_env.yaml")
 
 
 def test_build_simulated_desktop_server_spec_rejects_non_local_remote_url():

@@ -86,29 +86,6 @@ def _load_hf_export_norm_stats(checkpoint_dir):
 
     return recovered_stats or None
 
-
-def _load_hf_visual_feature_order(checkpoint_dir: str) -> tuple[str, ...] | None:
-    """Read the visual input feature order from a Hugging Face-exported config."""
-
-    config_path = Path(checkpoint_dir) / "config.json"
-    if not config_path.exists():
-        return None
-
-    config = json.loads(config_path.read_text())
-    input_features = config.get("input_features", {})
-    image_feature_order = []
-    for key in input_features:
-        if not key.startswith("observation.images."):
-            continue
-        camera_name = key.removeprefix("observation.images.")
-        if camera_name in {"left", "right", "top"}:
-            image_feature_order.append(camera_name)
-
-    if len(image_feature_order) < 3:
-        return None
-    return tuple(image_feature_order[:3])
-
-
 def _normalize_openpi_state_dict_keys(
     state_dict: dict[str, torch.Tensor],
 ) -> dict[str, torch.Tensor]:
@@ -487,19 +464,6 @@ def get_model(cfg: DictConfig, torch_dtype=None):
             f"Norm stats were not found in checkpoint {checkpoint_dir!r} or asset config "
             f"for asset_id {data_config.asset_id!r}."
         )
-    if getattr(actor_model_config, "config_name", None) == "pi05_yam_follower":
-        model._yam_camera_order = _load_hf_visual_feature_order(checkpoint_dir)
-        if model._yam_camera_order is not None:
-            logging.info(
-                "Using checkpoint-driven YAM camera order: %s",
-                model._yam_camera_order,
-            )
-        else:
-            logging.warning(
-                "Could not infer YAM camera order from %s/config.json; "
-                "falling back to the default OpenPI slot order.",
-                checkpoint_dir,
-            )
     # wrappers
     repack_transforms = transforms.Group()
     default_prompt = None

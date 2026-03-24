@@ -14,26 +14,28 @@
 
 """Local inference for embodied policy on a real robot via RobotServer.
 
-No Ray, no Beaker — runs entirely on the local machine (or any machine that
+No Ray, no Beaker - runs entirely on the local machine (or any machine that
 can reach the RobotServer gRPC port).
 
 Prerequisites:
     1. RobotServer running (real or dummy):
-         bash scripts/start_robot_server.sh --config .../yam_pi05_follower.yaml \
-             --use-follower-servers --no-tunnel [--dummy]
+         bash scripts/start_robot_server.sh --config /path/to/env.yaml \
+             --no-tunnel [--dummy]
     2. Model weights accessible (auto-downloaded from HuggingFace if needed).
 
 Usage::
 
     python examples/embodiment/infer_embodied_agent.py \
-        --model-path thomas0829/folding_towel_pi05 \
-        --task-description "fold the towel"
+        --model-path /path/to/openpi-checkpoint \
+        --config-name pi05_libero \
+        --task-description "pick up the object"
 
     # With dummy robot server (no real hardware):
     python examples/embodiment/infer_embodied_agent.py \
-        --model-path thomas0829/folding_towel_pi05 \
+        --model-path /path/to/openpi-checkpoint \
+        --config-name pi05_libero \
         --server-url localhost:50051 \
-        --task-description "fold the towel" \
+        --task-description "pick up the object" \
         --max-episodes 3
 
 """
@@ -153,32 +155,26 @@ def get_aggregate_function(name: str):
 def get_openpi_runtime_overrides(
     config_name: str,
     action_dim: int,
+    action_horizon: int,
     action_chunk: int,
     num_steps: int,
+    num_images_in_input: int,
+    discrete_state_input: bool,
 ) -> dict:
     """Build runtime overrides for OpenPI inference presets."""
-    overrides = {
+    return {
         "config_name": config_name,
-        "num_images_in_input": 1,
+        "num_images_in_input": num_images_in_input,
         "noise_method": "flow_sde",
-        "action_horizon": 50,
+        "action_horizon": action_horizon,
         "action_chunk": action_chunk,
         "num_steps": num_steps,
         "train_expert_only": True,
         "action_env_dim": action_dim,
         "add_value_head": False,
         "value_after_vlm": False,
+        "discrete_state_input": discrete_state_input,
     }
-
-    if config_name == "pi05_yam_follower":
-        overrides.update(
-            {
-                "num_images_in_input": 3,
-                "discrete_state_input": True,
-            }
-        )
-
-    return overrides
 
 
 def connect_to_server(server_url: str, timeout: float = 30.0):
@@ -282,8 +278,11 @@ def load_model(
     model_path: str,
     config_name: str,
     action_dim: int,
+    action_horizon: int,
     action_chunk: int,
     num_steps: int,
+    num_images_in_input: int,
+    discrete_state_input: bool,
 ):
     """Load the OpenPI model with transforms."""
     from rlinf.models.embodiment.openpi import get_model
@@ -291,8 +290,11 @@ def load_model(
     openpi_overrides = get_openpi_runtime_overrides(
         config_name=config_name,
         action_dim=action_dim,
+        action_horizon=action_horizon,
         action_chunk=action_chunk,
         num_steps=num_steps,
+        num_images_in_input=num_images_in_input,
+        discrete_state_input=discrete_state_input,
     )
     cfg = OmegaConf.create(
         {
@@ -569,7 +571,7 @@ def return_home(
     steps: int,
     grpc_timeout: float,
 ) -> np.ndarray | None:
-    """Interpolate back to the captured home pose like the original follower runtime."""
+    """Interpolate back to the captured home pose using single-step ChunkStep RPCs."""
     if steps < 1:
         return None
 
@@ -831,14 +833,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--model-path",
         type=str,
-        default="thomas0829/folding_towel_pi05",
+        default="checkpoints/torch/pi05_base",
         help="HuggingFace model ID or local path",
     )
     parser.add_argument(
         "--config-name",
         type=str,
-        default="pi05_yam_follower",
-        help="OpenPI config name (pi0_libero, pi05_libero, pi05_yam_follower, etc.)",
+        default="pi05_libero",
+        help="OpenPI config name",
     )
     parser.add_argument(
         "--server-url",
@@ -849,20 +851,38 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--task-description",
         type=str,
-        default="bimanual manipulation",
+        default="manipulation task",
         help="Task description prompt for the policy",
     )
     parser.add_argument(
         "--action-dim",
         type=int,
-        default=14,
-        help="Action dimension (14 for YAM bimanual: 2x7 DOF)",
+        default=None,
+        help="Environment action dimension. Defaults to the RobotServer action_dim.",
+    )
+    parser.add_argument(
+        "--action-horizon",
+        type=int,
+        default=10,
+        help="Model action horizon used when constructing OpenPI runtime overrides",
     )
     parser.add_argument(
         "--action-chunk",
         type=int,
         default=30,
         help="Number of actions to execute per inference call",
+    )
+    parser.add_argument(
+        "--num-images-in-input",
+        type=int,
+        default=2,
+        help="Number of image streams expected by the OpenPI checkpoint",
+    )
+    parser.add_argument(
+        "--discrete-state-input",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Whether the OpenPI checkpoint expects discretized state inputs",
     )
     parser.add_argument(
         "--num-steps",
@@ -938,12 +958,16 @@ def main():
     stub, spaces, channel = connect_to_server(args.server_url, args.connect_timeout)
 
     # Load model
+    action_dim = args.action_dim if args.action_dim is not None else spaces.action_dim
     model = load_model(
         args.model_path,
         args.config_name,
-        args.action_dim,
+        action_dim,
+        args.action_horizon,
         args.action_chunk,
         args.num_steps,
+        args.num_images_in_input,
+        args.discrete_state_input,
     )
     if sys.stdin.isatty():
         logger.info(

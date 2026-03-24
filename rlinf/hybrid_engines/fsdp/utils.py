@@ -40,7 +40,6 @@ from torch.distributed.fsdp.wrap import (
 from torch.optim import Optimizer
 from transformers.trainer_pt_utils import get_module_class_from_name
 
-from rlinf.config import SupportedModel
 from rlinf.hybrid_engines.fsdp import (
     FSDP,
     BackwardPrefetch,
@@ -97,16 +96,18 @@ def get_init_weight_context_manager(use_meta_tensor=True):
 
 def get_fsdp_wrap_policy(module, config=None, is_lora=False, model_type=None):
     """
-    FSDP wrap policy that handles both standard transformer models and VLA models.
+    FSDP wrap policy for RLinf's OpenPI-only embodied stack.
 
     Args:
         module: The model to wrap
         config: Configuration dictionary for wrap policy
         is_lora: Whether to enable LoRA-specific wrapping
+        model_type: Retained for call-site compatibility; ignored here.
 
     Returns:
         FSDP auto wrap policy function
     """
+    del model_type
     if config is None:
         config = {}
 
@@ -136,52 +137,6 @@ def get_fsdp_wrap_policy(module, config=None, is_lora=False, model_type=None):
 
     resnet_policy = functools.partial(_module_wrap_policy, module_classes={ResNet10})
     policies.append(resnet_policy)
-
-    # Add vision transformer policies for OpenVLA models
-    if SupportedModel(model_type) in [
-        SupportedModel.OPENVLA,
-        SupportedModel.OPENVLA_OFT,
-    ]:
-        from prismatic.extern.hf.modeling_prismatic import PrismaticProjector
-        from timm.models.vision_transformer import VisionTransformer
-
-        # Vision transformer policies
-        vit_wrap_policy = functools.partial(
-            _module_wrap_policy, module_classes={VisionTransformer}
-        )
-        policies.append(vit_wrap_policy)
-
-        # Prismatic projector policy for VLA models
-        # The prismatic package initializes a DistributedOverwatch by default,
-        # which initializes accelerate.PartialState, which in turn
-        # initializes a torch.distributed process group in gloo.
-        # This results in default group being gloo, which does not support CUDA tensors and allreduce average.
-
-        prismatic_fsdp_wrapping_policy = functools.partial(
-            _module_wrap_policy,
-            module_classes={PrismaticProjector},
-        )
-        policies.append(prismatic_fsdp_wrapping_policy)
-
-    if (
-        SupportedModel(model_type) == SupportedModel.CNN_POLICY
-        and not config.use_orig_params
-    ):
-        from torch.distributed.fsdp.wrap import lambda_auto_wrap_policy
-
-        from rlinf.models.embodiment.modules.resnet_utils import ResNetEncoder
-
-        encoder_policy = functools.partial(
-            _module_wrap_policy, module_classes={ResNetEncoder}
-        )
-        policies.append(encoder_policy)
-
-        def is_state_proj(m):
-            return getattr(m, "_fsdp_wrap_name", None) == "state_proj"
-
-        policies.append(
-            functools.partial(lambda_auto_wrap_policy, lambda_fn=is_state_proj)
-        )
 
     if hasattr(module, "value_head"):
         from rlinf.models.embodiment.modules.value_head import ValueHead
@@ -428,7 +383,7 @@ def get_lr_scheduler(
 def to_local_if_dtensor(tensor: Union[torch.Tensor, DTensor]) -> torch.Tensor:
     """Returns the local shard of the given tensor if it is a DTensor.
 
-    Taken and modified from: https://github.com/NVIDIA/Megatron-LM/blob/605f618f237cda8fa80132bc2ccff933512d5a0d/megatron/core/utils.py#L746
+    Taken and modified from an upstream distributed-training utility.
     """
     with torch.no_grad():
         return tensor.to_local() if isinstance(tensor, DTensor) else tensor
@@ -443,7 +398,7 @@ def clip_grad_by_total_norm_(
 ):
     """Clips gradient of an iterable of parameters by total norm.
 
-    Taken and modified from: https://github.com/NVIDIA/Megatron-LM/blob/a695b2bd2a0ca9ca63385a48c41a1c5a033cdd1e/megatron/core/optimizer/clip_grads.py#L138
+    Taken and modified from an upstream gradient clipping utility.
 
     Note that the gradients are modified in place.
 
@@ -481,7 +436,7 @@ def get_grad_norm(
 ) -> float:
     """Calculate the norm of gradients.
 
-    Taken and modified from: https://github.com/NVIDIA/Megatron-LM/blob/a695b2bd2a0ca9ca63385a48c41a1c5a033cdd1e/megatron/core/optimizer/clip_grads.py#L51
+    Taken and modified from an upstream gradient clipping utility.
 
     Args:
         parameters (Union[list[Union[torch.Tensor, DTensor]], Union[torch.Tensor, DTensor]]):

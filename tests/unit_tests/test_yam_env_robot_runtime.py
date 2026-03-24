@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the YAM follower home/zero-torque helpers."""
+"""Unit tests for YAMEnv home-pose and zero-torque helpers."""
 
 from unittest.mock import Mock
 

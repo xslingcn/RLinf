@@ -187,7 +187,7 @@ class NvidiaGPUManager(AcceleratorManager):
             return None
         else:
             pg_options = ProcessGroupNCCL.Options()
-            # Default values following https://github.com/NVIDIA/Megatron-LM/blob/98d8c56dbdc9cc91b8a473debcf400958bba4524/megatron/core/parallel_state.py#L160
+            # Default values follow the upstream NCCL process-group defaults used by this stack.
             pg_options.config.cga_cluster_size = (
                 options.accel_cluster_size or 4
             )  # Default 4

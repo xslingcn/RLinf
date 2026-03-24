@@ -20,7 +20,6 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from pathlib import Path
 
 from omegaconf import DictConfig
 
@@ -103,13 +102,11 @@ def build_simulated_desktop_server_spec(
 
     env_config_path = sim_cfg.get("env_config_path", None)
     if env_config_path is None:
-        env_config_path = default_env_config_path or (
-            Path(__file__).resolve().parents[4]
-            / "examples"
-            / "embodiment"
-            / "config"
-            / "env"
-            / "yam_pi05_follower.yaml"
+        env_config_path = default_env_config_path
+    if env_config_path is None:
+        raise RuntimeError(
+            "env.remote_desktop_simulation requires env_config_path to be set "
+            "explicitly because no default env config is bundled."
         )
     env_config_path = os.path.abspath(os.path.expanduser(str(env_config_path)))
 

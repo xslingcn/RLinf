@@ -23,7 +23,7 @@
 #        bash scripts/join_beaker_cluster.sh \
 #            --head-ip <beaker-tailscale-ip> \
 #            --config yam_ppo_openpi_desktop \
-#            --model-path thomas0829/folding_towel_pi05 \
+#            --model-path /path/to/openpi-checkpoint \
 #            --task "fold the towel"
 #
 # Prerequisites:

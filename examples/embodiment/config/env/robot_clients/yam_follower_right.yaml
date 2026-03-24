@@ -1,3 +1,0 @@
-_target_: rlinf.envs.yam.yam_follower_client.YAMFollowerClient
-host: "127.0.0.1"
-port: 1234

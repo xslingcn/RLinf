@@ -366,7 +366,7 @@ class YAMEnv(gym.Env):
 
     @contextmanager
     def _use_robot_command_futures(self, robot_names: tuple[str, ...]):
-        """Temporarily enable future-returning RPC calls for follower clients."""
+        """Temporarily enable future-returning RPC calls for compatible robot clients."""
         assert self._robot_env is not None, "Robot environment is not initialized."
         robots = [self._robot_env.robot(name) for name in robot_names]
         previous_states = []

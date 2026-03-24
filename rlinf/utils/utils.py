@@ -106,21 +106,6 @@ def cpu_weight_swap(resident_model, cpu_weights, offloaded_buffer=None):
     finally:
         swap_dict(resident_model, offloaded_buffer, offload_onto_cpu=False)
 
-
-def configure_batch_sizes(rank, mbs, gbs, dp=1):
-    from megatron.core.num_microbatches_calculator import (
-        reconfigure_num_microbatches_calculator,
-    )
-
-    reconfigure_num_microbatches_calculator(
-        rank=rank,
-        rampup_batch_size=None,
-        global_batch_size=gbs,
-        micro_batch_size=mbs,
-        data_parallel_size=dp,
-    )
-
-
 def masked_mean(values: torch.Tensor, mask: torch.Tensor, axis=None):
     """Compute mean of tensor with a masked values."""
     if mask is None:

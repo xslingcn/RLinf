@@ -231,7 +231,7 @@ class FSDPActor(FSDPModelManager, Worker):
         )
 
     def del_reshard_state_dict(self) -> None:
-        """Just for interface compatibility with MegatronActor."""
+        """Release cached rollout state dicts after weight sync."""
         if hasattr(self, "rollout_state_dict"):
             del self.rollout_state_dict
         clear_memory(sync=False)
@@ -1448,21 +1448,6 @@ class EmbodiedFSDPActor(FSDPModelManager, Worker):
 
                     forward_inputs = batch.get("forward_inputs", None)
 
-                    kwargs = {}
-                    if SupportedModel(self.cfg.actor.model.model_type) in [
-                        SupportedModel.OPENVLA,
-                        SupportedModel.OPENVLA_OFT,
-                    ]:
-                        kwargs["temperature"] = (
-                            self.cfg.algorithm.sampling_params.temperature_train
-                        )
-                        kwargs["top_k"] = self.cfg.algorithm.sampling_params.top_k
-                    elif (
-                        SupportedModel(self.cfg.actor.model.model_type)
-                        == SupportedModel.GR00T
-                    ):
-                        kwargs["prev_logprobs"] = prev_logprobs
-
                     compute_values = (
                         True if self.cfg.algorithm.adv_type == "gae" else False
                     )
@@ -1475,14 +1460,7 @@ class EmbodiedFSDPActor(FSDPModelManager, Worker):
                                 compute_entropy=self.cfg.algorithm.entropy_bonus > 0,
                                 compute_values=compute_values,
                                 use_cache=False,
-                                **kwargs,
                             )
-
-                    if (
-                        SupportedModel(self.cfg.actor.model.model_type)
-                        == SupportedModel.GR00T
-                    ):
-                        prev_logprobs = output_dict["prev_logprobs"]
 
                     output_dict["logprobs"] = self._sanitize_training_tensor(
                         "logprobs", output_dict["logprobs"], loss_mask

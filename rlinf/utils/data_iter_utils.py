@@ -690,7 +690,7 @@ def split_dynamic_batch_size(
             max_tokens_per_mbs=max_tokens_per_mbs,
         )
         assert n_micro_batch % microbatch_group_size_per_vp_stage == 0, (
-            f"micro_batches {data_iter} must be divisible by microbatch_group_size_per_vp_stage {microbatch_group_size_per_vp_stage} for megatron backend"
+            f"micro_batches {data_iter} must be divisible by microbatch_group_size_per_vp_stage {microbatch_group_size_per_vp_stage}"
         )
     else:
         data_iter, indices, n_micro_batch = get_iterator_dynamic(

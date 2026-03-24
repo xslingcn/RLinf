@@ -59,7 +59,7 @@ Examples:
       --head-ip 100.64.1.2 \
       --config my_custom_yam_config \
       --node-rank 1 \
-      --model-path thomas0829/folding_towel_pi05 \
+      --model-path /path/to/openpi-checkpoint \
       --task "pick and place"
 EOF
     exit 0

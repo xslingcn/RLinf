@@ -20,22 +20,8 @@ from rlinf.scheduler import Worker
 
 def get_model(cfg: DictConfig):
     model_type = get_supported_model(cfg.model_type)
-    if model_type == SupportedModel.OPENVLA:
-        from rlinf.models.embodiment.openvla import get_model
-    elif model_type == SupportedModel.OPENVLA_OFT:
-        from rlinf.models.embodiment.openvla_oft import get_model
-    elif model_type == SupportedModel.OPENPI:
+    if model_type == SupportedModel.OPENPI:
         from rlinf.models.embodiment.openpi import get_model
-    elif model_type == SupportedModel.DEXBOTIC_PI:
-        from rlinf.models.embodiment.dexbotic_pi import get_model
-    elif model_type == SupportedModel.MLP_POLICY:
-        from rlinf.models.embodiment.mlp_policy import get_model
-    elif model_type == SupportedModel.GR00T:
-        from rlinf.models.embodiment.gr00t import get_model
-    elif model_type == SupportedModel.CNN_POLICY:
-        from rlinf.models.embodiment.cnn_policy import get_model
-    elif model_type == SupportedModel.FLOW_POLICY:
-        from rlinf.models.embodiment.flow_policy import get_model
     else:
         return None
 
@@ -92,5 +78,5 @@ def get_model(cfg: DictConfig):
 
 
 def tag_vlm_subtree(model, is_vlm: bool):
-    for n, m in model.named_modules():
+    for _, m in model.named_modules():
         setattr(m, "_to_lora", is_vlm)

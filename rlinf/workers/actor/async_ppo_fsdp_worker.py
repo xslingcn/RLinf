@@ -19,7 +19,6 @@ import numpy as np
 import torch
 
 from rlinf.algorithms.registry import calculate_adv_and_returns, policy_loss
-from rlinf.config import SupportedModel
 from rlinf.utils.distributed import all_reduce_dict, masked_normalization
 from rlinf.utils.metric_utils import append_to_dict, compute_rollout_metrics
 from rlinf.utils.nested_dict_process import put_tensor_device, split_dict_to_chunk
@@ -118,27 +117,12 @@ class AsyncPPOEmbodiedFSDPActor(EmbodiedFSDPActor):
                     "This usually means batch splitting dropped nested dict fields."
                 )
 
-            model_kwargs = {}
-            if SupportedModel(self.cfg.actor.model.model_type) in [
-                SupportedModel.OPENVLA,
-                SupportedModel.OPENVLA_OFT,
-            ]:
-                model_kwargs["temperature"] = (
-                    self.cfg.algorithm.sampling_params.temperature_train
-                )
-                model_kwargs["top_k"] = self.cfg.algorithm.sampling_params.top_k
-            elif (
-                SupportedModel(self.cfg.actor.model.model_type) == SupportedModel.GR00T
-            ):
-                model_kwargs["prev_logprobs"] = micro_batch["prev_logprobs"]
-
             out = self.model(
                 forward_inputs=forward_inputs,
                 compute_logprobs=True,
                 compute_entropy=False,
                 compute_values=False,
                 use_cache=False,
-                **model_kwargs,
             )
             proximal_logprobs_list.append(out["logprobs"].cpu())
 
@@ -251,21 +235,6 @@ class AsyncPPOEmbodiedFSDPActor(EmbodiedFSDPActor):
                             "This usually means batch splitting dropped nested dict fields."
                         )
 
-                    model_kwargs = {}
-                    if SupportedModel(self.cfg.actor.model.model_type) in [
-                        SupportedModel.OPENVLA,
-                        SupportedModel.OPENVLA_OFT,
-                    ]:
-                        model_kwargs["temperature"] = (
-                            self.cfg.algorithm.sampling_params.temperature_train
-                        )
-                        model_kwargs["top_k"] = self.cfg.algorithm.sampling_params.top_k
-                    elif (
-                        SupportedModel(self.cfg.actor.model.model_type)
-                        == SupportedModel.GR00T
-                    ):
-                        model_kwargs["prev_logprobs"] = old_logprobs
-
                     compute_values = self.cfg.algorithm.adv_type == "gae"
 
                     with self.amp_context:
@@ -275,14 +244,7 @@ class AsyncPPOEmbodiedFSDPActor(EmbodiedFSDPActor):
                             compute_entropy=(self.cfg.algorithm.entropy_bonus > 0),
                             compute_values=compute_values,
                             use_cache=False,
-                            **model_kwargs,
                         )
-
-                    if (
-                        SupportedModel(self.cfg.actor.model.model_type)
-                        == SupportedModel.GR00T
-                    ):
-                        old_logprobs = out["prev_logprobs"]
 
                     loss_kwargs = {
                         "loss_type": self.cfg.algorithm.loss_type,

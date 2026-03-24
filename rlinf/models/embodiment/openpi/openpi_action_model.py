@@ -15,9 +15,8 @@
 import math
 import os
 import random
-from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, Sequence
 
 import jax
 import numpy as np
@@ -37,7 +36,7 @@ from rlinf.utils.nested_dict_process import copy_dict_tensor
 @dataclass(frozen=True)
 class OpenPi0Config(Pi0Config):
     # config for rl
-    config_name: str = "pi0_libero"  # pi0_libero, pi05_libero, pi0_maniskill, pi05_maniskill, pi0_metaworld, pi05_metaworld
+    config_name: str = "pi0_libero"
     num_images_in_input: int = 2  # number of images in input
     noise_method: str = "flow_sde"  # flow_sde, flow_noise, flow_cps
     # noise config for flow-sde
@@ -78,63 +77,6 @@ class OpenPi0Config(Pi0Config):
     dsrl_hidden_dims: tuple = field(
         default_factory=lambda: (128, 128, 128)
     )  # Hidden dims for Q-head and GaussianPolicy
-
-
-def _build_pi05_yam_follower_image_obs(
-    env_obs: dict[str, Any],
-    camera_order: Sequence[str] | None,
-) -> dict[str, torch.Tensor] | None:
-    """Map semantic YAM camera roles into OpenPI's fixed image slots.
-
-    YAM observations always arrive here with semantic roles:
-    - ``main_images``: top camera
-    - ``wrist_images[:, 0]``: left camera
-    - ``wrist_images[:, 1]``: right camera
-
-    Different PI0.5 checkpoints do not all expect the same visual feature
-    order. Some use ``left, top, right`` while others use ``left, right, top``.
-    We therefore map the semantic YAM roles into OpenPI's fixed image slots
-    according to the checkpoint's own ``input_features`` order.
-    """
-    if camera_order is None or len(camera_order) < 3:
-        return None
-
-    wrist_images = env_obs.get("wrist_images")
-    if wrist_images is None or wrist_images.ndim < 5 or wrist_images.shape[1] < 1:
-        return None
-    extra_view_images = env_obs.get("extra_view_images")
-    top_image = env_obs["main_images"]
-    left_image = wrist_images[:, 0]
-    right_image = None
-    if wrist_images.shape[1] > 1:
-        right_image = wrist_images[:, 1]
-    elif extra_view_images is not None:
-        right_image = (
-            extra_view_images[:, 0]
-            if extra_view_images.ndim >= 5
-            else extra_view_images
-        )
-    if right_image is None:
-        return None
-
-    semantic_images = {
-        "left": left_image,
-        "right": right_image,
-        "top": top_image,
-    }
-    openpi_slots = (
-        "observation/image",
-        "observation/wrist_image",
-        "observation/extra_view_image",
-    )
-    remapped_obs = {}
-    for slot, camera_name in zip(openpi_slots, camera_order[:3], strict=True):
-        image = semantic_images.get(camera_name)
-        if image is None:
-            return None
-        remapped_obs[slot] = image
-    return remapped_obs
-
 
 class OpenPi0ForRLActionPrediction(PI0Pytorch, BasePolicy):
     """
@@ -209,7 +151,7 @@ class OpenPi0ForRLActionPrediction(PI0Pytorch, BasePolicy):
             proj_width = 1024
         # value head
         if self.config.add_value_head:
-            if self.config.config_name in ["pi05_maniskill", "pi05_libero"]:
+            if self.config.config_name == "pi05_libero":
                 value_head_hidden_sizes = (1024, 512, 256)
             else:
                 value_head_hidden_sizes = (512, 256, 128)
@@ -507,13 +449,6 @@ class OpenPi0ForRLActionPrediction(PI0Pytorch, BasePolicy):
             processed_obs["observation/state_gripper"] = state[:, 6:7]
         else:
             processed_obs["observation/state"] = env_obs["states"]
-        if self.config.config_name == "pi05_yam_follower":
-            remapped_images = _build_pi05_yam_follower_image_obs(
-                env_obs, getattr(self, "_yam_camera_order", None)
-            )
-            if remapped_images is not None:
-                processed_obs.update(remapped_images)
-                return processed_obs
         # wrist image observation
         wrist_images = env_obs.get("wrist_images")
         if wrist_images is not None:
