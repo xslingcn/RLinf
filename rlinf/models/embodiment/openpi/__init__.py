@@ -13,10 +13,13 @@
 # limitations under the License.
 # openpi model configs
 
+import fcntl
+import importlib
 import json
 import logging
 import os
 import re
+import shutil
 from contextlib import nullcontext
 from pathlib import Path
 from types import MethodType
@@ -133,6 +136,55 @@ def _normalize_openpi_state_dict_keys(
     return state_dict
 
 
+def _openpi_transformers_replace_is_installed() -> bool:
+    try:
+        from transformers.models.siglip import check
+    except ImportError:
+        return False
+    return bool(check.check_whether_transformers_replace_is_installed_correctly())
+
+
+def ensure_openpi_transformers_replace() -> None:
+    """Install OpenPI's patched Transformers files into the active runtime env."""
+
+    if _openpi_transformers_replace_is_installed():
+        return
+
+    import openpi
+    import transformers
+
+    openpi_root = Path(openpi.__file__).resolve().parent
+    src_root = openpi_root / "models_pytorch" / "transformers_replace"
+    if not src_root.is_dir():
+        raise FileNotFoundError(
+            f"OpenPI transformers_replace directory not found at {src_root!s}"
+        )
+
+    transformers_root = Path(transformers.__file__).resolve().parent
+    lock_path = transformers_root / ".openpi_transformers_replace.lock"
+    with lock_path.open("w") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        if _openpi_transformers_replace_is_installed():
+            return
+
+        for src_path in src_root.iterdir():
+            dst_path = transformers_root / src_path.name
+            if src_path.is_dir():
+                shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
+            else:
+                shutil.copy2(src_path, dst_path)
+
+        importlib.invalidate_caches()
+        if not _openpi_transformers_replace_is_installed():
+            raise RuntimeError(
+                "OpenPI transformers_replace overlay was copied but is still not importable."
+            )
+        logging.info(
+            "Installed OpenPI transformers_replace overlay into %s.",
+            transformers_root,
+        )
+
+
 def _inject_missing_paligemma_embeddings(
     state_dict: dict[str, torch.Tensor],
 ) -> dict[str, torch.Tensor]:
@@ -211,6 +263,8 @@ def _load_pretrained_state_dict(
 
 
 def get_model(cfg: DictConfig, torch_dtype=None):
+    ensure_openpi_transformers_replace()
+
     import openpi.shared.download as download
     import openpi.transforms as transforms
     import safetensors
