@@ -300,7 +300,7 @@ else
         MARL_BOOTSTRAP="export MARL_REPO_DIR=\${MARL_REPO_DIR:-${MARL_REPO_DEFAULT}}"
         MARL_BOOTSTRAP+=" && export MARL_CONFIG_PATH=\${MARL_CONFIG_PATH:-\${MARL_REPO_DIR}/marl.yaml}"
         MARL_BOOTSTRAP+=" && export MARL_BASE_URL=\${MARL_BASE_URL:-http://127.0.0.1:8080}"
-        MARL_BOOTSTRAP+=" && nohup env CUDA_VISIBLE_DEVICES=2 uv run --project \${MARL_REPO_DIR} --python 3.12 python -m marl --config \${MARL_CONFIG_PATH} --log-level info > \${MARL_REPO_DIR}/marl_server.log 2>&1 &"
+        MARL_BOOTSTRAP+=" && nohup env CUDA_VISIBLE_DEVICES=2 uv run --project \${MARL_REPO_DIR} --python 3.12.3 python -m marl --config \${MARL_CONFIG_PATH} --log-level info > \${MARL_REPO_DIR}/marl_server.log 2>&1 &"
         MARL_BOOTSTRAP+=" && for i in \$(seq 1 60); do curl -fsS \${MARL_BASE_URL}/healthz >/dev/null && break; sleep 2; done"
         MARL_BOOTSTRAP+=" && curl -fsS \${MARL_BASE_URL}/healthz >/dev/null"
         TRAIN_CMD="${MARL_BOOTSTRAP} && ${TRAIN_CMD}"

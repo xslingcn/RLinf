@@ -8,7 +8,7 @@ version = "0.2.0"
 authors = [{ name = "RLinf Contributors" }]
 description = "Reinforcement Learning Infrastructure for Embodied AI"
 readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12.3,<3.13"
 license = {file = "LICENSE"}
 keywords = [
     "reinforcement-learning",
@@ -78,7 +78,7 @@ dev = [
     "pre-commit",
 ]
 embodied = [
-    "lerobot[pi]",
+    "lerobot[pi]==0.5.0",
     "grpcio>=1.73.1",
     "grpcio-tools>=1.73.1",
     "gym",
@@ -115,7 +115,6 @@ xsquare_turtle2 = [
 [tool.uv.sources]
 yam_realtime = { path = "third_party/yam_realtime", editable = true }
 i2rt = { path = "third_party/i2rt", editable = true }
-lerobot = { path = "../lerobot", editable = true }
 
 [tool.uv]
 prerelease = "allow"

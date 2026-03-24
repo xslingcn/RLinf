@@ -36,7 +36,7 @@ Recommended setup:
 
 ```bash
 cd /home/xsling/Code/mma2rl/RLinf-lerobot
-uv sync --python 3.12 --extra embodied
+uv sync --python 3.12.3 --extra embodied
 source .venv/bin/activate
 ```
 

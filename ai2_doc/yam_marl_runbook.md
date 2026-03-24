@@ -40,7 +40,7 @@ Use exactly these sources:
 
 Why the sibling layout matters:
 
-- `RLinf` manual training command uses `--with-editable ../openpi`
+- `RLinf` on this branch uses the remote LeRobot package dependency, not a local editable OpenPI checkout
 - `marl` expects the patched `sglang` checkout at `../sglang/python`
 - `submit_yam_training.sh` defaults `MARL_REPO_DIR` to the sibling repo `../marl`
 
@@ -137,7 +137,7 @@ export MARL_CONFIG_PATH=${MARL_REPO_DIR}/marl.yaml
 export MARL_BASE_URL=http://127.0.0.1:8080
 
 nohup env CUDA_VISIBLE_DEVICES=2 \
-  uv run --project ${MARL_REPO_DIR} --python 3.12 \
+  uv run --project ${MARL_REPO_DIR} --python 3.12.3 \
   python -m marl --config ${MARL_CONFIG_PATH} --log-level info \
   > ${MARL_REPO_DIR}/marl_server.log 2>&1 &
 
@@ -155,8 +155,6 @@ export MARL_BASE_URL=http://127.0.0.1:8080
 export EMBODIED_PATH=examples/embodiment
 
 uv run --project . --extra embodied \
-  --with 'chex==0.1.90' \
-  --with-editable ../openpi \
   python examples/embodiment/train_embodied_agent_marl.py \
   --config-name yam_ppo_openpi_topreward \
   actor.model.model_path=thomas0829/folding_towel_pi05 \
@@ -169,14 +167,11 @@ If you want the reward-only variant, switch the config:
 --config-name yam_ppo_openpi
 ```
 
-Why these flags are required with unchanged `uv`:
+Why this install path matters:
 
-- `--with-editable ../openpi`
-  - forces the sibling `openpi` fork
-- `--with 'chex==0.1.90'`
-  - keeps `jax/jaxlib` aligned with the current `openpi` path
-  - plain `--with chex` can resolve to a newer `jax/jaxlib` pair that breaks
-    `orbax-checkpoint` during actor initialization
+- `lerobot[pi]==0.5.0` from PyPI through `uv sync --extra embodied`
+  - keeps the runtime aligned with this branch's LeRobot-only embodied lane
+  - avoids pulling a local editable `openpi` checkout back into the environment
 
 ## 7. Actual Runtime Topology
 
@@ -231,8 +226,6 @@ export MARL_BASE_URL=http://127.0.0.1:18080
 export EMBODIED_PATH=examples/embodiment
 
 uv run --project . --extra embodied \
-  --with 'chex==0.1.90' \
-  --with-editable ../openpi \
   python examples/embodiment/train_embodied_agent_marl.py \
   --config-name yam_ppo_openpi_topreward \
   runner.max_epochs=1 \

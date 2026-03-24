@@ -8,11 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Installation
 ```bash
-# Python 3.10–3.11 required (see pyproject.toml requires-python)
+# Python 3.12.3 required (see `.python-version` and `pyproject.toml`)
 
 # Recommended: install with uv
-uv venv && source .venv/bin/activate
-UV_TORCH_BACKEND=auto uv sync
+uv venv --python 3.12.3 && source .venv/bin/activate
+UV_TORCH_BACKEND=auto uv sync --python 3.12.3
 
 # Or install from requirements (picks up model/env deps)
 bash requirements/install.sh embodied --model <model> --env <env>
