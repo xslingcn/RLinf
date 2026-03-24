@@ -37,8 +37,8 @@ configured via ``env_configs``:
 	      node_group: 4090
 	      placement: 0-63           # hardware ranks within ``4090``
 	    env:
-	      node_group: franka
-	      placement: 0-1            # robot hardware ranks within ``franka``
+	      node_group: yam
+	      placement: 0-1            # robot hardware ranks within ``yam``
 	    agent:
 	      node_group: node
 	      placement: 0-1:0-199,2-3:200-399  # node ranks : process ranks
@@ -59,10 +59,10 @@ configured via ``env_configs``:
 	          env_vars:
 	            - GLOO_SOCKET_IFNAME: "eth1"
 
-	    - label: franka
+	    - label: yam
 	      node_ranks: 16-17
 	      hardware:
-	        type: Franka
+	        type: YAM
 	        configs:
 	          - robot_ip: "10.10.10.1"
 	            node_rank: 16
@@ -84,11 +84,11 @@ The above configuration encodes the following ideas:
 
 * ``node_groups`` – each entry defines a **node group**: a set of nodes with the same hardware and environment. A node group has:
 
-  - ``label``: a unique string identifier used later in ``component_placement`` (e.g., ``a800``, ``4090``, ``franka``). Labels are case sensitive. 
+  - ``label``: a unique string identifier used later in ``component_placement`` (e.g., ``a800``, ``4090``, ``yam``). Labels are case sensitive. 
   
     The labels ``cluster`` and ``node`` are reserved by the scheduler. ``node`` is a special group that covers *all* nodes and is used for hardware-agnostic placement (CPU-only processes, agents, etc.).
 
-  - ``node_ranks``: a list or range of global node ranks that belong to this group. In the example, ``a800`` covers ``0-7``, ``4090`` covers ``8-15``, and ``franka`` covers ``16-17``.
+  - ``node_ranks``: a list or range of global node ranks that belong to this group. In the example, ``a800`` covers ``0-7``, ``4090`` covers ``8-15``, and ``yam`` covers ``16-17``.
 
   - ``env_configs`` (optional): a list of software environment configurations for subsets of nodes in the group. Each entry is a ``NodeGroupEnvConfig`` with its own ``node_ranks``, ``env_vars``, and ``python_interpreter_path``:
 

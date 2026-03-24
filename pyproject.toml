@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=69.5.1,<75.9", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -32,18 +32,19 @@ dependencies = [
     # Core System
     # These are the dependencies of the core scheduler
     "ray[default]>=2.47.0",
-    "torch>=2.10.0,<2.11",
+    "torch==2.10.0",
     "hydra-core",
-    "numpy>=2.2.6,<2.3.0",
+    "numpy==2.2.6",
     # Data processing
-    "datasets",
+    "datasets==4.8.4",
     "torchdata",
+    "fsspec==2025.3.0",
     "scipy",
     # Utilities
-    "accelerate",
+    "accelerate==1.13.0",
     "einops",
     "liger_kernel; sys_platform == 'linux' and platform_machine == 'x86_64'",
-    "huggingface_hub",
+    "huggingface_hub==1.7.2",
 ]
 
 [project.urls]
@@ -72,37 +73,13 @@ embodied = [
     "ninja",
     "pybind11",
     "pyrealsense2; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "safetensors==0.7.0",
     "tensorboard",
+    "tokenizers==0.22.2",
+    "torchvision==0.25.0",
+    "transformers==5.3.0",
     "wandb<0.25.1",
     "yam_realtime",
-]
-franka = [
-    "pyyaml",
-    "rospkg",
-    "empy==3.3.4",
-    "gymnasium==0.29.1",
-    "pyrealsense2",
-    "pyquaternion",
-    "opencv-python",
-    "defusedxml",
-    "pyspacemouse==1.1.5", 
-    "imageio[ffmpeg]",
-    "pynput"
-]
-xsquare_turtle2 = [
-    "pyyaml",
-    "rospkg",
-    "toppra",
-    "numpy==1.26.4",
-    "empy==3.3.4",
-    "gymnasium==0.29.1",
-    "pyrealsense2",
-    "pyquaternion",
-    "opencv-python",
-    "defusedxml",
-    "pyspacemouse==1.1.5", 
-    "imageio[ffmpeg]",
-    "pynput"
 ]
 
 [tool.uv.sources]
@@ -111,29 +88,6 @@ i2rt = { path = "third_party/i2rt", editable = true }
 
 [tool.uv]
 prerelease = "allow"
-conflicts = [
-    [
-      { extra = "embodied" },
-      { extra = "franka" },
-      { extra = "xsquare_turtle2" }
-    ],
-]
-override-dependencies = [
-    "torch==2.10.0",
-    "torchvision==0.25.0",
-    "xgrammar==0.1.19",
-    "uvloop==0.21.0",
-    "tensorflow-addons==0.23.0",
-    "setuptools>=69.5.1,<75.9",
-    "datasets==4.8.4",
-    "accelerate==1.13.0",
-    "transformers==5.3.0",
-    "tokenizers==0.22.2",
-    "huggingface_hub==1.7.2",
-    "numpy==2.2.6",
-    "safetensors==0.7.0",
-    "fsspec==2025.3.0",
-]
 
 [tool.setuptools]
 include-package-data = true

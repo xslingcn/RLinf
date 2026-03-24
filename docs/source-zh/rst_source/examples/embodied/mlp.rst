@@ -2,7 +2,7 @@ MLP策略强化学习训练
 ===============================================
 
 本示例展示 RLinf 框架使用 **MLP (Multi-Layer Perceptron)** 策略网络进行强化学习训练的完整流程。
-MLP 策略主要面向 **低维状态(state)输入** 的机器人控制任务，支持在仿真环境(ManiSkill3)、仿真环境(FrankaSim)、仿真环境(Libero-Spatial)中进行训练。
+MLP 策略主要面向 **低维状态(state)输入** 的机器人控制任务，支持在仿真环境(ManiSkill3) 与仿真环境(Libero-Spatial)中进行训练。
 当前提供的配置覆盖 **PPO-MLP** 、 **SAC-MLP** 、**GRPO-MLP** 算法设置，可用于快速验证环境、训练管线与网络结构。
 
 主要目标是让模型具备以下能力:
@@ -20,7 +20,6 @@ RLinf 目前支持多类具身智能环境，可通过 **defaults** 中的 ``env
 
 - ``maniskill_pick_cube`` (ManiSkill3 )
 - ``libero_spatial`` (LIBERO Spatial)
-- ``frankasim_pickcube_state`` (Mujoco )
 
 也可通过自定义环境配置来训练特定任务，具体可参考以下方式:
 
@@ -35,10 +34,6 @@ RLinf 目前支持多类具身智能环境，可通过 **defaults** 中的 ``env
    defaults:
      - env/libero_spatial@env.train
      - env/libero_spatial@env.eval
-
-   defaults:
-     - env/frankasim_pickcube_state@env.train
-     - env/frankasim_pickcube_state@env.eval
 
 算法
 -----------------------------------------
@@ -72,7 +67,7 @@ RLinf 目前支持多类具身智能环境，可通过 **defaults** 中的 ``env
 
 - ``hydra.searchpath: file://${oc.env:EMBODIED_PATH}/config/``
 
-请确保已正确设置 ``EMBODIED_PATH``，并安装 ManiSkill3 / FrankaSim 相关依赖与资源。
+请确保已正确设置 ``EMBODIED_PATH``，并安装 ManiSkill3 相关依赖与资源。
 
 运行脚本
 --------
@@ -83,7 +78,6 @@ RLinf 提供多份 MLP 默认配置，覆盖不同环境与算法设置:
 
 -   **ManiSkill + PPO + MLP**: ``maniskill_ppo_mlp`` 
 -   **ManiSkill + SAC + MLP**: ``maniskill_sac_mlp`` 
--   **FrankaSim + PPO + MLP**: ``franka_sim_ppo_mlp`` 
 
 **2. 关键参数配置**
 
@@ -116,7 +110,7 @@ MLP 模型由 ``model/mlp_policy@actor.model`` 引入，并在不同配置中做
 
 
 **2.2 集群与硬件配置 (Cluster)**
-    对于真机训练，使用多节点配置，将 Actor/Policy 部署在 GPU 服务器上，将 Env/Robot 部署在控制机（NUC/工控机）上。具体配置可参考 :doc:`franka` 。
+    对于真机训练，使用多节点配置，将 Actor/Policy 部署在 GPU 服务器上，将 Env/Robot 部署在控制机（NUC/工控机）上。本 worktree 中已移除历史 Franka 专用部署说明。
 
 **3. 启动命令**
 
@@ -138,14 +132,7 @@ MLP 模型由 ``model/mlp_policy@actor.model`` 引入，并在不同配置中做
 
    bash examples/embodiment/run_embodiment.sh libero_spatial_0_grpo_mlp
 
-**FrankaSim(PPO-MLP)**
-
-::
-
-   bash examples/embodiment/run_embodiment.sh franka_sim_ppo_mlp
-
 可视化与结果
--------------------------
 
 **1. TensorBoard 日志**
 
@@ -178,5 +165,3 @@ MLP 模型由 ``model/mlp_policy@actor.model`` 引入，并在不同配置中做
   - 估计 KL(approx_kl / kl)
   - clip 比例(clip_frac)
   - 策略熵(entropy)
-
-

@@ -75,9 +75,9 @@ def get_robot_env_logger() -> logging.Logger:
     """Get logger for robot environment."""
     return setup_logger("robot_env")
 
-def get_franka_logger() -> logging.Logger:
-    """Get logger for Franka robot."""
-    return setup_logger("franka")
+def get_robot_logger() -> logging.Logger:
+    """Get logger for robot control."""
+    return setup_logger("robot")
 
 def get_camera_logger() -> logging.Logger:
     """Get logger for camera operations."""

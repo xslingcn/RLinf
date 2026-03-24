@@ -69,7 +69,7 @@ Installation
 
 For running in a simulation environment, please refer to :doc:`../../start/installation` for installation.
 
-For running on real hardware, please refer to :doc:`franka` for installation and hardware configuration.
+For running on real hardware, follow the maintained robot-specific runbooks in the repository. The legacy Franka-specific installation page was removed from this worktree.
 
 Running Scripts
 ---------------
@@ -134,7 +134,7 @@ RLinf provides default configuration files for both simulation and real-world en
 
 **2.3 Cluster and Hardware Configuration (Cluster)**
 
-For real-world training, use a multi-node configuration, deploying the Actor/Policy on a GPU server and the Env/Robot on a control machine (NUC/Industrial PC). Specific configurations can be found in :doc:`franka`.
+For real-world training, use a multi-node configuration, deploying the Actor/Policy on a GPU server and the Env/Robot on a control machine (NUC/Industrial PC).
 
 
 **3. Launch Commands**

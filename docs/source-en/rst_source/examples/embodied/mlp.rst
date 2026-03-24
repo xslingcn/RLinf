@@ -3,7 +3,7 @@ MLP Policy Reinforcement Learning Training
 
 This example demonstrates the complete workflow for training Reinforcement Learning (RL) agents using **MLP (Multi-Layer Perceptron)** policy networks within the RLinf framework.
 
-The MLP policy is primarily designed for robotics control tasks utilizing **low-dimensional state inputs**. It supports training across various simulation environments, including **ManiSkill3**, **FrankaSim**, and **Libero-Spatial**.
+The MLP policy is primarily designed for robotics control tasks utilizing **low-dimensional state inputs**. It supports training across simulation environments including **ManiSkill3** and **Libero-Spatial**.
 
 The current configuration covers **PPO-MLP**, **SAC-MLP**, and **GRPO-MLP** algorithm setups, enabling rapid validation of environments, training pipelines, and network architectures.
 
@@ -24,7 +24,6 @@ Currently supported environments (covered in this example) include:
 
 -   ``maniskill_pick_cube`` (ManiSkill3)
 -   ``libero_spatial`` (LIBERO Spatial)
--   ``frankasim_pickcube_state`` (Mujoco / FrankaSim)
 
 You can also train on custom tasks by referencing specific environment configurations:
 
@@ -39,10 +38,6 @@ You can also train on custom tasks by referencing specific environment configura
    defaults:
      - env/libero_spatial@env.train
      - env/libero_spatial@env.eval
-
-   defaults:
-     - env/frankasim_pickcube_state@env.train
-     - env/frankasim_pickcube_state@env.eval
 
 Algorithms
 ----------
@@ -75,7 +70,7 @@ This configuration series uses Hydra's ``searchpath`` to load external configura
 
 -   ``hydra.searchpath: file://${oc.env:EMBODIED_PATH}/config/``
 
-Please ensure that ``EMBODIED_PATH`` is correctly set and that dependencies/resources for ManiSkill3 / FrankaSim are installed.
+Please ensure that ``EMBODIED_PATH`` is correctly set and that dependencies/resources for ManiSkill3 are installed.
 
 Running Scripts
 ---------------
@@ -86,7 +81,6 @@ RLinf provides several default MLP configurations covering different environment
 
 -   **ManiSkill + PPO + MLP**: ``maniskill_ppo_mlp``
 -   **ManiSkill + SAC + MLP**: ``maniskill_sac_mlp``
--   **FrankaSim + PPO + MLP**: ``franka_sim_ppo_mlp``
 
 **2. Key Parameter Configuration**
 
@@ -120,7 +114,7 @@ The MLP model is introduced via ``model/mlp_policy@actor.model`` and can be over
 
 **2.2 Cluster & Hardware Configuration (Cluster)**
 
-For real-robot training, a multi-node configuration is used, deploying the Actor/Policy on GPU servers and the Env/Robot on control machines (NUC/Industrial PC). For specific configurations, please refer to :doc:`franka`.
+For real-robot training, use a multi-node layout that deploys the Actor/Policy on GPU servers and the Env/Robot on control machines (NUC/Industrial PC). The legacy Franka-specific setup notes were removed from this worktree.
 
 **3. Launch Commands**
 
@@ -141,12 +135,6 @@ For real-robot training, a multi-node configuration is used, deploying the Actor
 ::
 
    bash examples/embodiment/run_embodiment.sh libero_spatial_0_grpo_mlp
-
-**FrankaSim (PPO-MLP)**
-
-::
-
-   bash examples/embodiment/run_embodiment.sh franka_sim_ppo_mlp
 
 Visualization & Results
 -----------------------

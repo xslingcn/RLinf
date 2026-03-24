@@ -152,7 +152,7 @@ Under multi-robot and heterogeneous settings, RLinf-USER achieves full policy co
 Quickstart
 ----------
 
-- :doc:`../examples/embodied/franka`
+- For the maintained local real-robot flow in this worktree, start from ``examples/embodiment/LOCAL_YAM_LEROBOT_PI05_RUNBOOK.md`` in the repository.
 
 Visualization
 -------------

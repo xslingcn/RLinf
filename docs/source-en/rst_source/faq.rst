@@ -41,11 +41,11 @@ Using Ray Distributed Debugger (Recommended)
       observation = self.input_transform(data, transpose=False)
       observation = _model.Observation.from_dict(observation)
 
-4. Run any RLinf script, for example, PPO Pi05:
+4. Run any RLinf script, for example, PPO OpenVLA:
 
    .. code-block:: bash
 
-      bash examples/embodiment/run_embodiment.sh maniskill_ppo_openpi_pi05
+      bash examples/embodiment/run_embodiment.sh maniskill_ppo_openvla
 
 5. Attach the debugger:
 
@@ -78,11 +78,11 @@ Using Ray Legacy Debugger (Fallback)
    observation = self.input_transform(data, transpose=False)
    observation = _model.Observation.from_dict(observation)
 
-2. Then run the corresponding program, for example, PPO Pi05:
+2. Then run the corresponding program, for example, PPO OpenVLA:
 
 .. code-block:: bash
 
-   RAY_DEBUG=legacy bash examples/embodiment/run_embodiment.sh maniskill_ppo_openpi_pi05
+   RAY_DEBUG=legacy bash examples/embodiment/run_embodiment.sh maniskill_ppo_openvla
 
 3. Run the program until you see the ``use 'ray debug' to connect ...`` prompt, then open a new terminal and execute ``ray debug`` to connect to the debugger.
 

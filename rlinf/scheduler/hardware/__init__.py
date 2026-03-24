@@ -21,10 +21,6 @@ from .hardware import (
     NodeHardwareConfig,
 )
 from .robots import (
-    FrankaConfig,
-    FrankaHWInfo,
-    Turtle2Config,
-    Turtle2HWInfo,
     YAMConfig,
     YAMHWInfo,
 )
@@ -38,10 +34,6 @@ __all__ = [
     "HardwareInfo",
     "HardwareResource",
     "NodeHardwareConfig",
-    "FrankaConfig",
-    "FrankaHWInfo",
     "YAMConfig",
     "YAMHWInfo",
-    "Turtle2Config",
-    "Turtle2HWInfo",
 ]

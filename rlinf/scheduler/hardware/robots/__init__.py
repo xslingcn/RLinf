@@ -12,18 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .franka import FrankaConfig, FrankaHWInfo
-from .xsquare import Turtle2Config, Turtle2HWInfo
 from .yam import (  # Must be imported to register the YAM hardware type
     YAMConfig,
     YAMHWInfo,
 )
 
 __all__ = [
-    "FrankaConfig",
-    "FrankaHWInfo",
-    "Turtle2Config",
-    "Turtle2HWInfo",
     "YAMConfig",
     "YAMHWInfo",
 ]

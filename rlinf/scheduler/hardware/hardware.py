@@ -106,7 +106,7 @@ class HardwareInfo:
     """Type of the hardware resource (e.g., Accelerator, Robot)."""
 
     model: str
-    """Model of the hardware resource (e.g., 4090, A100, H100, Franka)."""
+    """Model of the hardware resource (e.g., 4090, A100, H100, YAM)."""
 
 
 @dataclass

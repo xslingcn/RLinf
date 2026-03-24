@@ -91,14 +91,14 @@ Results
 Quickstart
 ----------
 
-**Full guide:** :doc:`../examples/embodied/pi0`
+**Full guide:** See ``examples/embodiment/LOCAL_YAM_LEROBOT_PI05_RUNBOOK.md`` in the repository for the maintained local pi0.5 inference path in this worktree.
 
 **Run:** ``bash examples/embodiment/run_embodiment.sh <CONFIG_NAME>`` (configs in ``examples/embodiment/config/``)
 
 **Model Selection:**
 
 - **π₀:** Configs **without** ``_pi05`` in the name
-- **π₀.₅:** Configs **with** ``_pi05`` in the name (e.g. ``*_openpi_pi05.yaml``)
+- **π₀.₅:** Configs **with** ``_pi05`` in the name (e.g. ``*_pi05.yaml``)
 
 **Benchmarks:**
 

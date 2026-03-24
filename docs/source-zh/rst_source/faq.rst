@@ -38,11 +38,11 @@
       observation = self.input_transform(data, transpose=False)
       observation = _model.Observation.from_dict(observation)
 
-4. 运行任意 RLinf 脚本（示例：PPO Pi05）：
+4. 运行任意 RLinf 脚本（示例：PPO OpenVLA）：
 
    .. code-block:: bash
 
-      bash examples/embodiment/run_embodiment.sh maniskill_ppo_openpi_pi05
+      bash examples/embodiment/run_embodiment.sh maniskill_ppo_openvla
 
 5. 连接调试器：
 
@@ -75,11 +75,11 @@
    observation = self.input_transform(data, transpose=False)
    observation = _model.Observation.from_dict(observation)
 
-2. 运行程序（示例：PPO Pi05）：
+2. 运行程序（示例：PPO OpenVLA）：
 
 .. code-block:: bash
 
-   RAY_DEBUG=legacy bash examples/embodiment/run_embodiment.sh maniskill_ppo_openpi_pi05
+   RAY_DEBUG=legacy bash examples/embodiment/run_embodiment.sh maniskill_ppo_openvla
 
 3. 当程序提示 ``use 'ray debug' to connect ...`` 时，另开终端执行：
 

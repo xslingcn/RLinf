@@ -18,7 +18,7 @@ NO_ROOT=0
 NO_INSTALL_RLINF_CMD=""
 SUPPORTED_TARGETS=("embodied" "docs")
 SUPPORTED_MODELS=("openvla" "openvla-oft" "gr00t" "dexbotic")
-SUPPORTED_ENVS=("behavior" "maniskill_libero" "metaworld" "calvin" "isaaclab" "robocasa" "franka" "frankasim" "robotwin" "habitat" "opensora" "wan" "xsquare_turtle2" "remote")
+SUPPORTED_ENVS=("behavior" "maniskill_libero" "metaworld" "calvin" "isaaclab" "robocasa" "robotwin" "habitat" "opensora" "wan" "remote")
 
 #=======================Utility Functions=======================
 
@@ -357,11 +357,6 @@ install_openvla_model() {
             install_common_embodied_deps
             install_maniskill_libero_env
             ;;
-        frankasim)
-            create_and_sync_venv
-            install_common_embodied_deps
-            install_frankasim_env
-            ;;
         *)
             echo "Environment '$ENV_NAME' is not supported for OpenVLA model." >&2
             exit 1
@@ -483,21 +478,7 @@ install_dexbotic_model() {
 
 install_env_only() {
     create_and_sync_venv
-    SKIP_ROS=${SKIP_ROS:-0}
     case "$ENV_NAME" in
-        franka)
-            uv sync --extra franka --active $NO_INSTALL_RLINF_CMD
-            if [ "$SKIP_ROS" -ne 1 ]; then
-                if [ "$NO_ROOT" -eq 0 ]; then
-                    bash $SCRIPT_DIR/embodied/ros_install.sh
-                fi
-                install_franka_env
-            fi
-            ;;
-        xsquare_turtle2)
-            uv sync --extra xsquare_turtle2 --active $NO_INSTALL_RLINF_CMD
-            install_xsquare_turtle2_env
-            ;;
         habitat)
             install_common_embodied_deps
             install_habitat_env
@@ -578,62 +559,6 @@ install_robocasa_env() {
     python -m robocasa.scripts.setup_macros
 }
 
-install_franka_env() {
-    # Install serl_franka_controller
-    # Check if ROS_CATKIN_PATH is set or serl_franka_controllers is already built
-    set +euo pipefail
-    source /opt/ros/noetic/setup.bash
-    set -euo pipefail
-    ROS_CATKIN_PATH=$(realpath "$VENV_DIR/franka_catkin_ws")
-    LIBFRANKA_VERSION=${LIBFRANKA_VERSION:-0.15.0}
-    FRANKA_ROS_VERSION=${FRANKA_ROS_VERSION:-0.10.0}
-
-    mkdir -p "$ROS_CATKIN_PATH/src"
-
-    # Clone necessary repositories
-    pushd "$ROS_CATKIN_PATH/src"
-    if [ ! -d "$ROS_CATKIN_PATH/src/serl_franka_controllers" ]; then
-        git clone https://github.com/rail-berkeley/serl_franka_controllers
-    fi
-    if [ ! -d "$ROS_CATKIN_PATH/libfranka" ]; then
-        git clone -b "${LIBFRANKA_VERSION}" --recurse-submodules https://github.com/frankaemika/libfranka $ROS_CATKIN_PATH/libfranka
-    fi
-    if [ ! -d "$ROS_CATKIN_PATH/src/franka_ros" ]; then
-        # Use a fork version that fixes compile issues with newer libfranka using C++17
-        git clone -b "${FRANKA_ROS_VERSION}" --recurse-submodules https://github.com/RLinf/franka_ros
-    fi
-    popd >/dev/null
-
-    # Build
-    pushd "$ROS_CATKIN_PATH"
-    # libfranka first
-    if [ ! -f "$ROS_CATKIN_PATH/libfranka/build/libfranka.so" ]; then
-        mkdir -p "$ROS_CATKIN_PATH/libfranka/build"
-        pushd "$ROS_CATKIN_PATH/libfranka/build" >/dev/null
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/openrobots/lib/cmake -DBUILD_TESTS=OFF ..
-        make -j$(nproc)
-        popd >/dev/null
-    fi
-    export LD_LIBRARY_PATH=$ROS_CATKIN_PATH/libfranka/build:/opt/openrobots/lib:$LD_LIBRARY_PATH
-    export CMAKE_PREFIX_PATH=$ROS_CATKIN_PATH/libfranka/build:$CMAKE_PREFIX_PATH
-
-    # Then franka_ros
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 -DFranka_DIR:PATH=$ROS_CATKIN_PATH/libfranka/build
-
-    # Finally serl_franka_controllers
-    catkin_make -DCMAKE_CXX_STANDARD=17 --pkg serl_franka_controllers
-    popd >/dev/null
-
-    echo "export LD_LIBRARY_PATH=$ROS_CATKIN_PATH/libfranka/build:/opt/openrobots/lib:\$LD_LIBRARY_PATH" >> "$VENV_DIR/bin/activate"
-    echo "export CMAKE_PREFIX_PATH=$ROS_CATKIN_PATH/libfranka/build:\$CMAKE_PREFIX_PATH" >> "$VENV_DIR/bin/activate"
-    echo "source /opt/ros/noetic/setup.bash" >> "$VENV_DIR/bin/activate"
-    echo "source $ROS_CATKIN_PATH/devel/setup.bash" >> "$VENV_DIR/bin/activate"
-}
-
-install_xsquare_turtle2_env() {
-    uv pip install git+${GITHUB_PREFIX}https://github.com/RLinf/xsquare_turtle_basics.git
-}
-
 install_robotwin_env() {
     # Set TORCH_CUDA_ARCH_LIST based on the CUDA version
     local nvcc_exe
@@ -694,13 +619,6 @@ install_robotwin_env() {
     # 808                 return {"status": "screw plan failed"}
     PLANNER=$MPLIB_LOCATION/planner.py
     sed -i -E 's/(if np.linalg.norm\(delta_twist\) < 1e-4 )(or collide )(or not within_joint_limit:)/\1\3/g' $PLANNER
-}
-
-install_frankasim_env() {
-    local serldir
-    serldir=$(clone_or_reuse_repo SERL_PATH "$VENV_DIR/serl" https://github.com/RLinf/serl.git -b RLinf/franka-sim)
-    uv pip install -e "$serldir/franka_sim"
-    uv pip install -r "$serldir/franka_sim/requirements.txt"
 }
 
 install_habitat_env() {

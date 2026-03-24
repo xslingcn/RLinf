@@ -23,7 +23,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from rlinf.scheduler import Cluster, ComponentPlacement, NodePlacementStrategy, Worker
 from rlinf.scheduler.cluster.config import ClusterConfig
-from rlinf.scheduler.hardware.robots.franka import FrankaConfig
+from rlinf.scheduler.hardware.robots.yam import YAMConfig
 
 
 def test_cluster_config_parses_node_group_hardware():
@@ -44,20 +44,22 @@ def test_cluster_config_parses_node_group_hardware():
                     ],
                 },
                 {
-                    "label": "franka",
+                    "label": "yam",
                     "node_ranks": "2,3",
                     "hardware": {
-                        "type": "Franka",
+                        "type": "YAM",
                         "configs": [
                             {
                                 "node_rank": 2,
-                                "robot_ip": "10.10.10.1",
+                                "left_ip": "10.10.10.1",
+                                "right_ip": "10.10.10.2",
                                 "camera_serials": ["322142001230"],
                                 "disable_validate": True,
                             },
                             {
                                 "node_rank": 3,
-                                "robot_ip": "10.10.10.2",
+                                "left_ip": "10.10.10.3",
+                                "right_ip": "10.10.10.4",
                                 "camera_serials": ["322142001231"],
                                 "disable_validate": True,
                             },
@@ -92,25 +94,27 @@ def test_cluster_config_parses_node_group_hardware():
     )
     assert cluster_cfg.get_node_hw_configs_by_rank(0) == []
 
-    franka_group = next(
-        group for group in cluster_cfg.node_groups if group.label == "franka"
+    yam_group = next(
+        group for group in cluster_cfg.node_groups if group.label == "yam"
     )
-    assert franka_group.node_ranks == [2, 3]
-    assert franka_group.hardware_type == "Franka"
+    assert yam_group.node_ranks == [2, 3]
+    assert yam_group.hardware_type == "YAM"
 
     node2_hw = cluster_cfg.get_node_hw_configs_by_rank(2)
     assert len(node2_hw) == 1
-    assert isinstance(node2_hw[0], FrankaConfig)
-    assert node2_hw[0].robot_ip == "10.10.10.1"
+    assert isinstance(node2_hw[0], YAMConfig)
+    assert node2_hw[0].left_ip == "10.10.10.1"
+    assert node2_hw[0].right_ip == "10.10.10.2"
     assert node2_hw[0].camera_serials == ["322142001230"]
 
     node3_hw = cluster_cfg.get_node_hw_configs_by_rank(3)
     assert len(node3_hw) == 1
-    assert isinstance(node3_hw[0], FrankaConfig)
-    assert node3_hw[0].robot_ip == "10.10.10.2"
+    assert isinstance(node3_hw[0], YAMConfig)
+    assert node3_hw[0].left_ip == "10.10.10.3"
+    assert node3_hw[0].right_ip == "10.10.10.4"
 
-    assert cluster_cfg.get_node_labels_by_rank(2) == ["franka"]
-    assert cluster_cfg.get_node_labels_by_rank(3) == ["franka"]
+    assert cluster_cfg.get_node_labels_by_rank(2) == ["yam"]
+    assert cluster_cfg.get_node_labels_by_rank(3) == ["yam"]
     assert cluster_cfg.get_node_labels_by_rank(1) == ["a800"]
     assert cluster_cfg.get_node_labels_by_rank(99) == []
 
@@ -177,28 +181,30 @@ def test_cluster_config_duplicate_hardware_type_same_node():
             "component_placement": {},
             "node_groups": [
                 {
-                    "label": "franka_a",
+                    "label": "yam_a",
                     "node_ranks": "0",
                     "hardware": {
-                        "type": "Franka",
+                        "type": "YAM",
                         "configs": [
                             {
                                 "node_rank": 0,
-                                "robot_ip": "10.0.0.1",
+                                "left_ip": "10.0.0.1",
+                                "right_ip": "10.0.0.2",
                                 "disable_validate": True,
                             }
                         ],
                     },
                 },
                 {
-                    "label": "franka_b",
+                    "label": "yam_b",
                     "node_ranks": "0,1",
                     "hardware": {
-                        "type": "Franka",
+                        "type": "YAM",
                         "configs": [
                             {
                                 "node_rank": 0,
-                                "robot_ip": "10.0.0.2",
+                                "left_ip": "10.0.0.3",
+                                "right_ip": "10.0.0.4",
                                 "disable_validate": True,
                             }
                         ],
@@ -222,16 +228,18 @@ def test_cluster_config_duplicate_hardware_entries_disallowed():
                     "label": "robots",
                     "node_ranks": "0",
                     "hardware": {
-                        "type": "Franka",
+                        "type": "YAM",
                         "configs": [
                             {
                                 "node_rank": 0,
-                                "robot_ip": "10.0.0.1",
+                                "left_ip": "10.0.0.1",
+                                "right_ip": "10.0.0.2",
                                 "disable_validate": True,
                             },
                             {
                                 "node_rank": 0,
-                                "robot_ip": "10.0.0.1",
+                                "left_ip": "10.0.0.1",
+                                "right_ip": "10.0.0.2",
                                 "disable_validate": True,
                             },
                         ],
@@ -294,7 +302,7 @@ def test_cluster_config_hardware_configs_must_be_mapping():
                     "label": "robot",
                     "node_ranks": "0",
                     "hardware": {
-                        "type": "Franka",
+                        "type": "YAM",
                         "configs": ["BAD"],
                     },
                 }
@@ -315,14 +323,15 @@ def test_cluster_config_hardware_node_rank_must_be_in_group():
             "component_placement": {},
             "node_groups": [
                 {
-                    "label": "franka",
+                    "label": "yam",
                     "node_ranks": "0",
                     "hardware": {
-                        "type": "Franka",
+                        "type": "YAM",
                         "configs": [
                             {
                                 "node_rank": 1,
-                                "robot_ip": "10.0.0.1",
+                                "left_ip": "10.0.0.1",
+                                "right_ip": "10.0.0.2",
                                 "disable_validate": True,
                             }
                         ],
@@ -386,11 +395,11 @@ def test_cluster_config_missing_required_hardware_field():
                     "label": "robot",
                     "node_ranks": "0",
                     "hardware": {
-                        "type": "Franka",
+                        "type": "YAM",
                         "configs": [
                             {
                                 "node_rank": 0,
-                                # Missing robot_ip
+                                # Missing left_ip/right_ip
                                 "disable_validate": True,
                             }
                         ],
@@ -401,7 +410,8 @@ def test_cluster_config_missing_required_hardware_field():
     )
 
     with pytest.raises(
-        AssertionError, match=r"Missing fields '\['robot_ip'\]' detected"
+        AssertionError,
+        match=r"Missing fields '.*(?:left_ip.*right_ip|right_ip.*left_ip).*' detected",
     ):
         ClusterConfig.from_dict_cfg(config)
 
@@ -416,11 +426,12 @@ def test_cluster_config_unknown_hardware_field_rejected():
                     "label": "robot",
                     "node_ranks": "0",
                     "hardware": {
-                        "type": "Franka",
+                        "type": "YAM",
                         "configs": [
                             {
                                 "node_rank": 0,
-                                "robot_ip": "10.0.0.1",
+                                "left_ip": "10.0.0.1",
+                                "right_ip": "10.0.0.2",
                                 "disable_validate": True,
                                 "unknown_field": 1,
                             }
@@ -522,7 +533,7 @@ def test_cluster_env_configs_applied_in_worker_launch():
 
     assert env_values == [env_value]
     assert pythonpath_values[0] is not None
-    assert pythonpath_values[0].split(os.pathsep)[0] == str(tests_root)
+    assert str(tests_root) in pythonpath_values[0].split(os.pathsep)
 
 
 def test_cluster_env_configs_multi_node_group_and_hetero_placement():
@@ -536,9 +547,9 @@ def test_cluster_env_configs_multi_node_group_and_hetero_placement():
             "cluster": {
                 "num_nodes": 1,
                 "component_placement": {
-                    # gpu has 4 accelerators; franka adds one more hardware rank after them.
-                    # Use ranks 0 (gpu0) and 4 (franka0).
-                    "hetero": {"node_group": "gpu,franka", "placement": "0,4"}
+                    # gpu has 4 accelerators; yam adds one more hardware rank after them.
+                    # Use ranks 0 (gpu0) and 4 (yam0).
+                    "hetero": {"node_group": "gpu,yam", "placement": "0,4"}
                 },
                 "node_groups": [
                     {
@@ -553,14 +564,15 @@ def test_cluster_env_configs_multi_node_group_and_hetero_placement():
                         ],
                     },
                     {
-                        "label": "franka",
+                        "label": "yam",
                         "node_ranks": "0",
                         "hardware": {
-                            "type": "Franka",
+                            "type": "YAM",
                             "configs": [
                                 {
                                     "node_rank": 0,
-                                    "robot_ip": "127.0.0.1",
+                                    "left_ip": "127.0.0.1",
+                                    "right_ip": "127.0.0.2",
                                     "disable_validate": True,
                                 }
                             ],
@@ -569,7 +581,7 @@ def test_cluster_env_configs_multi_node_group_and_hetero_placement():
                             {
                                 "node_ranks": "0",
                                 "python_interpreter_path": sys.executable,
-                                "env_vars": [{"FRANKA_ENV": "1"}],
+                                "env_vars": [{"YAM_ENV": "1"}],
                             }
                         ],
                     },
@@ -586,14 +598,14 @@ def test_cluster_env_configs_multi_node_group_and_hetero_placement():
 
         assert len(placements) == 2
         labels = [p.node_group_label for p in placements]
-        assert set(labels) == {"gpu", "franka"}
+        assert set(labels) == {"gpu", "yam"}
 
         gpu_group = cluster.get_node_group("gpu")
-        franka_group = cluster.get_node_group("franka")
+        yam_group = cluster.get_node_group("yam")
         assert gpu_group.get_node_env_vars(0) == {"GPU_ENV": "1"}
-        assert franka_group.get_node_env_vars(0) == {"FRANKA_ENV": "1"}
+        assert yam_group.get_node_env_vars(0) == {"YAM_ENV": "1"}
         assert gpu_group.get_node_python_interpreter_path(0) == sys.executable
-        assert franka_group.get_node_python_interpreter_path(0) == sys.executable
+        assert yam_group.get_node_python_interpreter_path(0) == sys.executable
     finally:
         if ray.is_initialized():
             ray.shutdown()

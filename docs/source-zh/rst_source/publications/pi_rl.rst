@@ -91,14 +91,14 @@
 快速开始
 --------
 
-**完整指南：** :doc:`../examples/embodied/pi0`
+**完整指南：** 当前 worktree 维护的本地 pi0.5 推理路径请参考仓库内的 ``examples/embodiment/LOCAL_YAM_LEROBOT_PI05_RUNBOOK.md``。
 
 **运行：** ``bash examples/embodiment/run_embodiment.sh <CONFIG_NAME>`` （配置文件位于 ``examples/embodiment/config/``）
 
 **模型选择：**
 
 - **π₀：** 名称中**不含** ``_pi05`` 的配置
-- **π₀.₅：** 名称中**包含** ``_pi05`` 的配置（例如 ``*_openpi_pi05.yaml``）
+- **π₀.₅：** 名称中**包含** ``_pi05`` 的配置（例如 ``*_pi05.yaml``）
 
 **基准测试：**
 

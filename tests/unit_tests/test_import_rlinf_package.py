@@ -29,7 +29,6 @@ from pathlib import Path
 DEFAULT_NO_TEST_MODULES = [
     "rlinf/envs",
     "rlinf/models",
-    "rlinf/utils/ckpt_convertor/convert_openpi_jax_to_python.py",
 ]
 
 

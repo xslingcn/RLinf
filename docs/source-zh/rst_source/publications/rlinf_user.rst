@@ -152,7 +152,7 @@ RLinf-USER 采用完全异步流水线，将数据生成、训练与权重同步
 快速开始
 --------
 
-- :doc:`../examples/embodied/franka`
+- 本 worktree 当前维护的本地真机流程请参考仓库内的 ``examples/embodiment/LOCAL_YAM_LEROBOT_PI05_RUNBOOK.md``。
 
 可视化
 ------

@@ -753,7 +753,7 @@ class TestModelParallelComponentPlacement:
 
 class TestHeteroMultiNodeGroupPlacement:
     def test_flexible_placement_across_hetero_node_groups(self):
-        # Fake cluster with one node exposing both GPU and Franka hardware plus per-group env/interpreter.
+        # Fake cluster with one node exposing both GPU and YAM hardware plus per-group env/interpreter.
         nodes = [
             NodeInfo(
                 node_labels=[],
@@ -772,8 +772,8 @@ class TestHeteroMultiNodeGroupPlacement:
                         ],
                     ),
                     HardwareResource(
-                        type="Franka",
-                        infos=[HardwareInfo(type="Franka", model="Franka")],
+                        type="YAM",
+                        infos=[HardwareInfo(type="YAM", model="YAM")],
                     ),
                 ],
             )
@@ -790,21 +790,21 @@ class TestHeteroMultiNodeGroupPlacement:
                 )
             ],
         )
-        franka_group = NodeGroupInfo(
-            label="franka",
+        yam_group = NodeGroupInfo(
+            label="yam",
             nodes=nodes,
-            hardware_type="Franka",
+            hardware_type="YAM",
             env_configs=[
                 NodeGroupEnvConfig(
                     node_ranks=[0],
-                    env_vars=OmegaConf.create([{"FRANKA_ENV": "1"}]),
-                    python_interpreter_path="/opt/franka/python",
+                    env_vars=OmegaConf.create([{"YAM_ENV": "1"}]),
+                    python_interpreter_path="/opt/yam/python",
                 )
             ],
         )
         node_groups = {
             gpu_group.label: gpu_group,
-            franka_group.label: franka_group,
+            yam_group.label: yam_group,
             NodeGroupInfo.DEFAULT_GROUP_LABEL: NodeGroupInfo(
                 label=NodeGroupInfo.DEFAULT_GROUP_LABEL, nodes=nodes
             ),
@@ -813,25 +813,25 @@ class TestHeteroMultiNodeGroupPlacement:
 
         strategy = FlexiblePlacementStrategy(
             hardware_ranks_list=[[0], [1]],
-            node_group_label=["gpu", "franka"],
+            node_group_label=["gpu", "yam"],
         )
         placements = strategy.get_placement(cluster, isolate_accelerator=True)
 
         assert len(placements) == 2
-        gpu_placement, franka_placement = placements
+        gpu_placement, yam_placement = placements
 
         assert gpu_placement.node_group_label == "gpu"
         assert gpu_placement.local_hardware_ranks == [0]
         assert gpu_placement.visible_accelerators == ["0"]
 
-        assert franka_placement.node_group_label == "franka"
-        assert franka_placement.local_hardware_ranks == [0]
-        assert franka_placement.visible_accelerators == ["0"]
+        assert yam_placement.node_group_label == "yam"
+        assert yam_placement.local_hardware_ranks == [0]
+        assert yam_placement.visible_accelerators == ["0"]
 
         assert gpu_group.get_node_env_vars(0) == {"GPU_ENV": "1"}
-        assert franka_group.get_node_env_vars(0) == {"FRANKA_ENV": "1"}
+        assert yam_group.get_node_env_vars(0) == {"YAM_ENV": "1"}
         assert gpu_group.get_node_python_interpreter_path(0) == "/opt/gpu/python"
-        assert franka_group.get_node_python_interpreter_path(0) == "/opt/franka/python"
+        assert yam_group.get_node_python_interpreter_path(0) == "/opt/yam/python"
 
     def test_packed_placement_across_hetero_node_groups(self):
         nodes = [
@@ -852,8 +852,8 @@ class TestHeteroMultiNodeGroupPlacement:
                         ],
                     ),
                     HardwareResource(
-                        type="Franka",
-                        infos=[HardwareInfo(type="Franka", model="Franka")],
+                        type="YAM",
+                        infos=[HardwareInfo(type="YAM", model="YAM")],
                     ),
                 ],
             )
@@ -870,21 +870,21 @@ class TestHeteroMultiNodeGroupPlacement:
                 )
             ],
         )
-        franka_group = NodeGroupInfo(
-            label="franka",
+        yam_group = NodeGroupInfo(
+            label="yam",
             nodes=nodes,
-            hardware_type="Franka",
+            hardware_type="YAM",
             env_configs=[
                 NodeGroupEnvConfig(
                     node_ranks=[0],
-                    env_vars=OmegaConf.create([{"FRANKA_ENV": "1"}]),
-                    python_interpreter_path="/opt/franka/python",
+                    env_vars=OmegaConf.create([{"YAM_ENV": "1"}]),
+                    python_interpreter_path="/opt/yam/python",
                 )
             ],
         )
         node_groups = {
             gpu_group.label: gpu_group,
-            franka_group.label: franka_group,
+            yam_group.label: yam_group,
             NodeGroupInfo.DEFAULT_GROUP_LABEL: NodeGroupInfo(
                 label=NodeGroupInfo.DEFAULT_GROUP_LABEL, nodes=nodes
             ),
@@ -892,7 +892,7 @@ class TestHeteroMultiNodeGroupPlacement:
         cluster = FakeCluster(nodes, node_groups)
 
         strategy = PackedPlacementStrategy(
-            start_hardware_rank=0, end_hardware_rank=1, node_group=["gpu", "franka"]
+            start_hardware_rank=0, end_hardware_rank=1, node_group=["gpu", "yam"]
         )
         placements = strategy.get_placement(cluster, isolate_accelerator=True)
         assert len(placements) == 2
@@ -902,15 +902,15 @@ class TestHeteroMultiNodeGroupPlacement:
         assert p0.local_hardware_ranks == [0]
         assert p0.visible_accelerators == ["0"]
 
-        assert p1.node_group_label == "franka"
+        assert p1.node_group_label == "yam"
         assert p1.local_hardware_ranks == [0]
-        # Franka is non-accelerator; visible accelerators remain the node's GPUs
+        # YAM is non-accelerator; visible accelerators remain the node's GPUs
         assert p1.visible_accelerators == ["0"]
 
         assert gpu_group.get_node_env_vars(0) == {"GPU_ENV": "1"}
-        assert franka_group.get_node_env_vars(0) == {"FRANKA_ENV": "1"}
+        assert yam_group.get_node_env_vars(0) == {"YAM_ENV": "1"}
         assert gpu_group.get_node_python_interpreter_path(0) == "/opt/gpu/python"
-        assert franka_group.get_node_python_interpreter_path(0) == "/opt/franka/python"
+        assert yam_group.get_node_python_interpreter_path(0) == "/opt/yam/python"
 
     def test_node_placement_multi_node_groups(self):
         nodes = [
@@ -986,8 +986,8 @@ class TestHeteroMultiNodeGroupPlacement:
                         ],
                     ),
                     HardwareResource(
-                        type="Franka",
-                        infos=[HardwareInfo(type="Franka", model="Franka")],
+                        type="YAM",
+                        infos=[HardwareInfo(type="YAM", model="YAM")],
                     ),
                 ],
             )
@@ -1004,21 +1004,21 @@ class TestHeteroMultiNodeGroupPlacement:
                 )
             ],
         )
-        franka_group = NodeGroupInfo(
-            label="franka",
+        yam_group = NodeGroupInfo(
+            label="yam",
             nodes=nodes,
-            hardware_type="Franka",
+            hardware_type="YAM",
             env_configs=[
                 NodeGroupEnvConfig(
                     node_ranks=[0],
-                    env_vars=OmegaConf.create([{"FRANKA_ENV": "1"}]),
-                    python_interpreter_path="/opt/franka/python",
+                    env_vars=OmegaConf.create([{"YAM_ENV": "1"}]),
+                    python_interpreter_path="/opt/yam/python",
                 )
             ],
         )
         node_groups = {
             gpu_group.label: gpu_group,
-            franka_group.label: franka_group,
+            yam_group.label: yam_group,
             NodeGroupInfo.DEFAULT_GROUP_LABEL: NodeGroupInfo(
                 label=NodeGroupInfo.DEFAULT_GROUP_LABEL, nodes=nodes
             ),
@@ -1027,17 +1027,17 @@ class TestHeteroMultiNodeGroupPlacement:
 
         strategy = FlexiblePlacementStrategy(
             hardware_ranks_list=[[0], [1]],
-            node_group_label=["gpu", "franka"],
+            node_group_label=["gpu", "yam"],
         )
         placements = strategy.get_placement(cluster, isolate_accelerator=True)
         assert len(placements) == 2
         assert placements[0].node_group_label == "gpu"
-        assert placements[1].node_group_label == "franka"
+        assert placements[1].node_group_label == "yam"
 
         assert gpu_group.get_node_env_vars(0) == {"GPU_ENV": "1"}
-        assert franka_group.get_node_env_vars(0) == {"FRANKA_ENV": "1"}
+        assert yam_group.get_node_env_vars(0) == {"YAM_ENV": "1"}
         assert gpu_group.get_node_python_interpreter_path(0) == "/opt/gpu/python"
-        assert franka_group.get_node_python_interpreter_path(0) == "/opt/franka/python"
+        assert yam_group.get_node_python_interpreter_path(0) == "/opt/yam/python"
 
     def test_single_process_mixed_node_groups_raises(self):
         # One process cannot span different hardware/node groups
@@ -1061,16 +1061,16 @@ class TestHeteroMultiNodeGroupPlacement:
                         ],
                     ),
                     HardwareResource(
-                        type="Franka",
-                        infos=[HardwareInfo(type="Franka", model="Franka")],
+                        type="YAM",
+                        infos=[HardwareInfo(type="YAM", model="YAM")],
                     ),
                 ],
             )
         ]
         node_groups = {
             "gpu": NodeGroupInfo(label="gpu", nodes=nodes),
-            "franka": NodeGroupInfo(
-                label="franka", nodes=nodes, hardware_type="Franka"
+            "yam": NodeGroupInfo(
+                label="yam", nodes=nodes, hardware_type="YAM"
             ),
             NodeGroupInfo.DEFAULT_GROUP_LABEL: NodeGroupInfo(
                 label=NodeGroupInfo.DEFAULT_GROUP_LABEL, nodes=nodes
@@ -1080,7 +1080,7 @@ class TestHeteroMultiNodeGroupPlacement:
 
         strategy = FlexiblePlacementStrategy(
             hardware_ranks_list=[[0, 1]],
-            node_group_label=["gpu", "franka"],
+            node_group_label=["gpu", "yam"],
         )
         with pytest.raises(AssertionError):
             strategy.get_placement(cluster, isolate_accelerator=True)

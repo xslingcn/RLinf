@@ -11,11 +11,7 @@ FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-calvin
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-isaaclab
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-robotwin
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-opensora
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-frankasim
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-wan
-
-# Franka depends on ros-noetic, which is not available on Ubuntu 22.04
-FROM ubuntu:20.04 AS base-image-embodied-franka
 
 
 ##################################################################################################
@@ -178,20 +174,6 @@ RUN echo "source ${UV_PATH}/gr00t/bin/activate" >> ~/.bashrc
 
 
 ##################################################################################################
-# Embodied: Franka (Ubuntu 20.04, ROS Noetic)
-##################################################################################################
-FROM embodied-common-image AS embodied-franka-image
-
-# Install multiple Franka environments with different libfranka versions
-RUN for v in 0.10.0 0.13.3 0.14.1 0.15.0 0.18.0; do \
-            LIBFRANKA_VERSION="$v" FRANKA_ROS_VERSION=0.10.0 bash requirements/install.sh embodied --venv "franka-$v" --env franka; \
-        done
-
-# Set default env (recommended libfranka 0.15.0)
-RUN echo "source ${UV_PATH}/franka-0.15.0/bin/activate" >> ~/.bashrc
-
-
-##################################################################################################
 # Embodied: RoboTwin
 ##################################################################################################
 FROM embodied-common-image AS embodied-robotwin-image
@@ -224,17 +206,6 @@ RUN bash requirements/install.sh embodied --venv openvla-oft --model openvla-oft
 
 # Set default env
 RUN echo "source ${UV_PATH}/openvla-oft/bin/activate" >> ~/.bashrc
-
-##################################################################################################
-# Embodied: FrankaSim
-##################################################################################################
-FROM embodied-common-image AS embodied-frankasim-image
-
-# Install openvla env
-RUN bash requirements/install.sh embodied --venv openvla --model openvla --env frankasim
-
-# Set default env
-RUN echo "source ${UV_PATH}/openvla/bin/activate" >> ~/.bashrc
 
 ##################################################################################################
 # Final image selection

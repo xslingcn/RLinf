@@ -166,7 +166,7 @@ class ClusterConfig:
 
     For component placement format, refer to `rlinf.scheduler.placement.component_placement`. Here is the detailed specification of the node group configuration.
 
-    An example cluster node group configuration in YAML format, which describes a heterogeneous RL training setup with 2 types of accelerators (A800 for training and 4090 for rollout), Franka robot arm for real-world interaction, and node-level placement for agent processes:
+    An example cluster node group configuration in YAML format, which describes a heterogeneous RL training setup with 2 types of accelerators (A800 for training and 4090 for rollout), a YAM robot controller group for real-world interaction, and node-level placement for agent processes:
 
     cluster:
       num_nodes: 18
@@ -178,7 +178,7 @@ class ClusterConfig:
           node_group: 4090
           placement: 0-63  # Hardware ranks
         env:
-          node_group: franka
+          node_group: yam
           placement: 0-1   # Hardware ranks
         agent:
           node_group: node
@@ -200,17 +200,19 @@ class ClusterConfig:
               env_vars:
                 - GLOO_SOCKET_IFNAME: "eth1"
 
-        - label: franka
+        - label: yam
           node_ranks: 16-17
           hardware:
-            type: Franka
+            type: YAM
             configs:
-              - robot_ip: "10.10.10.1"
+              - left_ip: "10.10.10.1"
+                right_ip: "10.10.10.2"
                 node_rank: 16
                 camera_serials:
                   - "322142001230"
                   - "322142001231"
-              - robot_ip: "10.10.10.2"
+              - left_ip: "10.10.10.3"
+                right_ip: "10.10.10.4"
                 node_rank: 17
                 camera_serials:
                   - "322142001232"
@@ -224,7 +226,7 @@ class ClusterConfig:
 
             - 4090: Node ranks 8-15 with 4090 GPUs for rollout (labeled with "4090"). Environment variables are configured via `env_configs`.
 
-            - franka: Node ranks 16-17 with Franka robot arms (labeled with "franka"). Each node has specific hardware configurations including robot IPs and camera serials. Different types of hardware have different configurations; refer to the specific hardware type docs for more information.
+            - yam: Node ranks 16-17 with YAM robot controllers (labeled with "yam"). Each node has specific hardware configurations including controller IPs and camera serials. Different types of hardware have different configurations; refer to the specific hardware type docs for more information.
 
         The concrete specification is as follows.
 

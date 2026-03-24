@@ -69,7 +69,7 @@
 
 对于在仿真环境运行，请参考 :doc:`../../start/installation` 进行安装。
 
-对于在真机上运行，请参考 :doc:`franka` 进行安装和硬件配置。
+对于在真机上运行，请参考仓库中当前维护的机器人 runbook。本 worktree 中已移除历史 Franka 专用安装页面。
 
 运行脚本
 --------
@@ -134,7 +134,7 @@ RLinf 提供了针对仿真和真机环境的默认配置文件：
 
 **2.3 集群与硬件配置 (Cluster)**
 
-对于真机训练，使用多节点配置，将 Actor/Policy 部署在 GPU 服务器上，将 Env/Robot 部署在控制机（NUC/工控机）上。具体配置可参考 :doc:`franka` 。
+对于真机训练，使用多节点配置，将 Actor/Policy 部署在 GPU 服务器上，将 Env/Robot 部署在控制机（NUC/工控机）上。
 
 
 **3. 启动命令**

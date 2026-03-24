@@ -18,9 +18,7 @@ from .collective import CollectiveGroupOptions
 from .hardware import (
     AcceleratorType,
     AcceleratorUtil,
-    FrankaHWInfo,
     HardwareInfo,
-    Turtle2HWInfo,
     YAMHWInfo,
 )
 from .manager import WorkerInfo
@@ -37,9 +35,7 @@ __all__ = [
     "AcceleratorUtil",
     "AcceleratorType",
     "HardwareInfo",
-    "FrankaHWInfo",
     "YAMHWInfo",
-    "Turtle2HWInfo",
     "CollectiveGroupOptions",
     "Cluster",
     "ClusterConfig",

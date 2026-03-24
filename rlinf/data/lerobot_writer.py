@@ -822,8 +822,8 @@ def merge_distributed_datasets(
 
     Usage:
         merge_distributed_datasets(
-            base_dir="/path/to/results/test_openpi",
-            output_dir="/path/to/results/test_openpi/merged_data",
+            base_dir="/path/to/results/test_lerobot",
+            output_dir="/path/to/results/test_lerobot/merged_data",
             pattern="collected_data_stage*_rank*"
         )
     """
