@@ -3,7 +3,7 @@
 set -euo pipefail
 
 DOWNLOAD_DIR=${DOWNLOAD_DIR:-$HOME}
-SUPPORT_LIST=("maniskill" "openpi")
+SUPPORT_LIST=("maniskill")
 GITHUB_PREFIX=${GITHUB_PREFIX:-""}
 ASSETS=()
 
@@ -19,7 +19,7 @@ Options:
 
 Examples:
   bash requirements/embodied/download_assets.sh --assets maniskill
-  bash requirements/embodied/download_assets.sh --dir /opt/.assets --assets maniskill,openpi
+  bash requirements/embodied/download_assets.sh --dir /opt/.assets --assets maniskill
 EOF
 }
 
@@ -50,19 +50,6 @@ download_maniskill_assets() {
 		mkdir -p "$PHYSX_DIR"
 		wget -O "$PHYSX_DIR/linux-so.zip" "${GITHUB_PREFIX}https://github.com/sapien-sim/physx-precompiled/releases/download/${PHYSX_VERSION}/linux-so.zip"
 		unzip "$PHYSX_DIR/linux-so.zip" -d "$PHYSX_DIR" && rm "$PHYSX_DIR/linux-so.zip"
-	fi
-}
-
-download_openpi_assets() {
-	local root_dir=$1
-
-	export TOKENIZER_DIR="${root_dir}/.cache/openpi/"
-
-	if [ -f "$TOKENIZER_DIR/paligemma_tokenizer.model" ]; then
-		echo "[download_assets] OpenPI tokenizer already exists at $TOKENIZER_DIR, skipping download."
-	else
-		mkdir -p "$TOKENIZER_DIR"
-		hf download RLinf/openpi_tokenizer --local-dir "$TOKENIZER_DIR"
 	fi
 }
 
@@ -117,9 +104,6 @@ main() {
 		case "$asset" in
 			maniskill)
 				download_maniskill_assets "$DOWNLOAD_DIR"
-				;;
-			openpi)
-				download_openpi_assets "$DOWNLOAD_DIR"
 				;;
 			*)
 				echo "Unknown asset group: $asset. Supported: ${SUPPORT_LIST[*]}" >&2

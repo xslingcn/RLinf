@@ -17,7 +17,7 @@ GITHUB_PREFIX=""
 NO_ROOT=0
 NO_INSTALL_RLINF_CMD=""
 SUPPORTED_TARGETS=("embodied" "docs")
-SUPPORTED_MODELS=("openvla" "openvla-oft" "openpi" "gr00t" "dexbotic")
+SUPPORTED_MODELS=("openvla" "openvla-oft" "gr00t" "dexbotic")
 SUPPORTED_ENVS=("behavior" "maniskill_libero" "metaworld" "calvin" "isaaclab" "robocasa" "franka" "frankasim" "robotwin" "habitat" "opensora" "wan" "xsquare_turtle2" "remote")
 
 #=======================Utility Functions=======================
@@ -433,72 +433,6 @@ install_openvla_oft_model() {
     uv pip uninstall pynvml || true
 }
 
-install_openpi_model() {
-    case "$ENV_NAME" in
-        behavior)
-            PYTHON_VERSION="3.10"
-            create_and_sync_venv
-            install_common_embodied_deps
-            install_behavior_env
-            uv pip install protobuf==6.33.0
-            ;;
-        maniskill_libero)
-            create_and_sync_venv
-            install_common_embodied_deps
-            install_maniskill_libero_env
-            install_flash_attn
-            ;;
-        metaworld)
-            create_and_sync_venv
-            install_common_embodied_deps
-            install_flash_attn
-            install_metaworld_env
-            ;;
-        calvin)
-            create_and_sync_venv
-            install_common_embodied_deps
-            install_flash_attn
-            install_calvin_env
-            ;;
-        robocasa)
-            create_and_sync_venv
-            install_common_embodied_deps
-            install_flash_attn
-            install_robocasa_env
-            ;;
-        robotwin)
-            create_and_sync_venv
-            install_common_embodied_deps
-            install_flash_attn
-            install_robotwin_env
-            ;;
-        remote)
-            create_and_sync_venv
-            install_common_embodied_deps
-            install_flash_attn
-            ;;
-        *)
-            echo "Environment '$ENV_NAME' is not supported for OpenPI model." >&2
-            exit 1
-            ;;
-    esac
-
-    uv pip install "transformers==4.53.2" "tokenizers==0.21.1"
-
-    # Replace transformers models with OpenPI's modified versions.
-    local py_major_minor
-    py_major_minor=$(python - <<'EOF'
-import sys
-print(f"{sys.version_info.major}.{sys.version_info.minor}")
-EOF
-)
-    cp -r "$VENV_DIR/lib/python${py_major_minor}/site-packages/openpi/models_pytorch/transformers_replace/"* \
-        "$VENV_DIR/lib/python${py_major_minor}/site-packages/transformers/"
-
-    bash $SCRIPT_DIR/embodied/download_assets.sh --assets openpi
-    uv pip uninstall pynvml || true
-}
-
 install_gr00t_model() {
     create_and_sync_venv
     install_common_embodied_deps
@@ -845,9 +779,6 @@ main() {
                     ;;
                 openvla-oft)
                     install_openvla_oft_model
-                    ;;
-                openpi)
-                    install_openpi_model
                     ;;
                 gr00t)
                     install_gr00t_model

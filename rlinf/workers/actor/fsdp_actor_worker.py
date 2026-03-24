@@ -1213,40 +1213,10 @@ class EmbodiedFSDPActor(FSDPModelManager, Worker):
         return rollout_metrics
 
     def _build_sft_data_loader(self):
-        if SupportedModel(self.cfg.actor.model.model_type) in [SupportedModel.OPENPI]:
-            # NOTE: This must be set before importing openpi.training.data_loader
-            if self.cfg.actor.get("sft_data_path", None):
-                os.environ["HF_LEROBOT_HOME"] = self.cfg.actor.sft_data_path
-
-            from rlinf.models.embodiment.openpi import (
-                ensure_openpi_transformers_replace,
-            )
-
-            ensure_openpi_transformers_replace()
-            import openpi.training.data_loader as _data
-
-            from rlinf.models.embodiment.openpi.dataconfig import get_openpi_config
-
-            if "config_name" not in self.cfg.actor:
-                raise ValueError(
-                    "config_name is required when enable_sft_co_train=True"
-                )
-            training_config_name = self.cfg.actor.config_name
-            data_loader_config = get_openpi_config(
-                training_config_name,
-                model_path=self.cfg.actor.model.model_path,
-                data_kwargs=getattr(self.cfg.actor, "openpi_data", None),
-            )
-            self.data_loader = _data.create_data_loader(
-                data_loader_config, framework="pytorch", shuffle=True
-            )
-            self.sft_iterator = iter(self.data_loader)
-            self.train_epoch = 0
-            self.sft_loss_weight = self.cfg.actor.get("sft_loss_weight", 0.1)
-        else:
-            raise KeyError(
-                f"not support such model type {self.cfg.actor.model.model_type} for SFT right now."
-            )
+        raise KeyError(
+            f"SFT co-training is not supported for model type {self.cfg.actor.model.model_type!r} "
+            "in this LeRobot-only worktree."
+        )
 
     def _train_sft_epoch(
         self, metrics_data: dict[str, torch.Tensor], loss: torch.Tensor

@@ -20,12 +20,7 @@ from rlinf.scheduler import Worker
 
 def get_model(cfg: DictConfig):
     model_type = get_supported_model(cfg.model_type)
-    if model_type == SupportedModel.OPENPI:
-        raise NotImplementedError(
-            "The OpenPI model lane is disabled in this RLinf-lerobot worktree. "
-            "Use model_type='lerobot_pi05' instead."
-        )
-    elif model_type == SupportedModel.LEROBOT_PI05:
+    if model_type == SupportedModel.LEROBOT_PI05:
         from rlinf.models.embodiment.lerobot_pi05 import get_model
     else:
         return None
@@ -37,55 +32,8 @@ def get_model(cfg: DictConfig):
         model = model.to(Worker.torch_device_type)
 
     if cfg.is_lora:
-        if model_type == SupportedModel.LEROBOT_PI05:
-            raise NotImplementedError(
-                "LoRA is not supported for lerobot_pi05 in inference-only mode."
-            )
-        from peft import LoraConfig, PeftModel, get_peft_model
-
-        if not hasattr(cfg, "lora_path") or cfg.lora_path is None:
-            lora_config = LoraConfig(
-                r=cfg.lora_rank,
-                lora_alpha=cfg.lora_rank,
-                lora_dropout=0.0,
-                target_modules=[
-                    "proj",
-                    "qkv",
-                    "fc1",
-                    "fc2",  # vision
-                    "q",
-                    "kv",
-                    "fc3",
-                    "out_proj",  # project
-                    "q_proj",
-                    "k_proj",
-                    "v_proj",
-                    "o_proj",
-                    "gate_proj",
-                    "up_proj",
-                    "down_proj",
-                    "lm_head",  # llm
-                ],
-                init_lora_weights="gaussian",
-            )
-            if model_type == SupportedModel.OPENPI:
-                module_to_lora = model.paligemma_with_expert.paligemma
-                module_to_lora = get_peft_model(module_to_lora, lora_config)
-                tag_vlm_subtree(model, False)
-                tag_vlm_subtree(module_to_lora, True)
-                model.paligemma_with_expert.paligemma = module_to_lora
-            else:
-                model = get_peft_model(model, lora_config)
-        else:
-            model = PeftModel.from_pretrained(model, cfg.lora_path, is_trainable=True)
-
-        if hasattr(model, "value_head"):
-            for param in model.value_head.parameters():
-                param.requires_grad = True
+        raise NotImplementedError(
+            "LoRA is not supported for lerobot_pi05 in inference-only mode."
+        )
 
     return model
-
-
-def tag_vlm_subtree(model, is_vlm: bool):
-    for _, m in model.named_modules():
-        setattr(m, "_to_lora", is_vlm)

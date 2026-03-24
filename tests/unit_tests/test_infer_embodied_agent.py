@@ -78,11 +78,7 @@ def test_build_arg_parser_defaults_match_generic_local_inference_workflow():
     args = infer.build_arg_parser().parse_args([])
 
     assert args.model_type == "lerobot_pi05"
-    assert args.config_name == "pi05_libero"
     assert args.action_dim is None
-    assert args.action_horizon == 10
-    assert args.num_images_in_input == 2
-    assert args.discrete_state_input is False
     assert args.show_state_chunk is False
     assert args.return_home is True
     assert args.return_home_steps == 50

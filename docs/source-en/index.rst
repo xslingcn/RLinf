@@ -74,7 +74,6 @@ RLinf is a flexible and scalable open-source infrastructure designed for post-tr
 .. _ManiSkill3: https://github.com/haosulab/ManiSkill
 .. _LIBERO: https://github.com/Lifelong-Robot-Learning/LIBERO
 .. _IsaacLab: https://github.com/isaac-sim/IsaacLab
-.. _π₀: https://github.com/Physical-Intelligence/openpi
 .. _Megatron-LM: https://github.com/NVIDIA/Megatron-LM
 .. _SGLang: https://github.com/sgl-project/sglang
 .. _vLLM: https://github.com/vllm-project/vllm

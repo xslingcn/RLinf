@@ -2,10 +2,6 @@
 #
 # submit_yam_training.sh — Submit YAM training to Beaker.
 #
-# Supports two configs (both use TOPReward, both need 3 GPUs):
-#   yam_ppo_openpi                  — PPO + π₀.5 + TOPReward (no subtask planning)
-#   yam_ppo_openpi_topreward        — PPO + π₀.5 + TOPReward + subtask planning
-#
 # Topology (both configs, single Beaker node):
 #   GPU 0 — actor (FSDP training)
 #   GPU 1 — rollout (inference)
@@ -28,7 +24,7 @@
 set -euo pipefail
 
 # --- Defaults ---
-CONFIG_NAME="yam_ppo_openpi"
+CONFIG_NAME=""
 MODEL_PATH=""
 TASK_DESC="pick and place"
 EXP_NAME=""
@@ -48,7 +44,7 @@ REPO_DIR="/weka/oe-training-default/shiruic/RLinf"
 BEAKER_IMAGE="shiruic/shirui-torch2.8.0_cuda12.8"
 WORKSPACE="ai2/molmo-act"
 WEKA_MOUNT="oe-training-default:/weka/oe-training-default"
-INSTALL_CMD="bash requirements/install.sh embodied --model openpi --env remote"
+INSTALL_CMD="uv sync --python 3.12.3 --extra embodied"
 RAY_PORT=6379
 
 usage() {
@@ -57,12 +53,8 @@ Usage: bash scripts/submit_yam_training.sh [OPTIONS] [-- HYDRA_OVERRIDES...]
 
 Submit YAM training to Beaker with automatic component placement.
 
-Supported configs (both use TOPReward, both require 3 GPUs):
-  yam_ppo_openpi                  3 GPUs — TOPReward only, no subtask planning
-  yam_ppo_openpi_topreward        3 GPUs — TOPReward + VLM subtask planning
-
 Options:
-  --config NAME         Hydra config name (default: yam_ppo_openpi)
+  --config NAME         Hydra config name (required)
   --model-path PATH     Path to model checkpoint (local or HuggingFace ID)
   --task DESC           Task description (default: "pick and place")
   --name NAME           Experiment name (default: rlinf-<config>)
@@ -80,7 +72,7 @@ Options:
   --help                Show this help
 
 Extra Hydra overrides can be passed after '--':
-  bash scripts/submit_yam_training.sh --model-path /path/to/openpi-checkpoint -- algorithm.update_epoch=2
+  bash scripts/submit_yam_training.sh --config my_config --model-path /path/to/pi05-checkpoint -- algorithm.update_epoch=2
 
 After submission:
   1. Check Beaker logs until the head node is up on Tailscale
@@ -144,6 +136,11 @@ if [ -z "$EXP_NAME" ]; then
         EXP_NAME="rlinf-${CONFIG_NAME}"
     fi
 fi
+if [ -z "$CONFIG_NAME" ]; then
+    echo "Error: --config is required"
+    echo ""
+    usage
+fi
 
 # --- Detect config type and set GPU count / entry point ---
 IS_TOPREWARD=false
@@ -151,7 +148,7 @@ IS_MARL=false
 ENTRY_SCRIPT="train_embodied_agent.py"
 
 case "$CONFIG_NAME" in
-    yam_ppo_openpi|yam_ppo_openpi_topreward|*marl*)
+    *marl*)
         IS_TOPREWARD=true
         IS_MARL=true
         ENTRY_SCRIPT="train_embodied_agent_marl.py"

@@ -11,10 +11,10 @@ export PYTHONPATH=${REPO_PATH}:$PYTHONPATH
 export HYDRA_FULL_ERROR=1
 
 if [ -z "$1" ]; then
-    CONFIG_NAME="yam_ppo_openpi_desktop"
-else
-    CONFIG_NAME=$1
+    echo "Usage: bash examples/embodiment/eval_embodiment.sh <config-name> [ROBOT_PLATFORM]" >&2
+    exit 1
 fi
+CONFIG_NAME=$1
 
 # NOTE: Set the active robot platform (required for correct action dimension and normalization), supported platforms are LIBERO, ALOHA, BRIDGE, default is LIBERO
 ROBOT_PLATFORM=${2:-${ROBOT_PLATFORM:-"LIBERO"}}

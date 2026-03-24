@@ -15,7 +15,7 @@ Brief for AI coding agents working on RLinf. For full contribution flow, code st
   - `data/` – Datasets for embodied training.
   - `envs/` – ManiSkill, LIBERO, IsaacLab, CALVIN, MetaWorld, Behavior, RoboCasa, FrankaSim, RealWorld, RoboTwin, Habitat, OpenSora world model; `get_env_cls()` in `envs/__init__.py`.
   - `hybrid_engines/` – SGLang/vLLM rollout integration.
-  - `models/` – Embodiment (OpenVLA, OpenVLA-OFT, OpenPI, GR00T, MLP/CNN/Flow/CMA).
+  - `models/` – Embodiment (OpenVLA, OpenVLA-OFT, LeRobot PI0.5, GR00T, MLP/CNN/Flow/CMA).
   - `runners/` – Embodied (sync/async) and eval.
   - `scheduler/` – Cluster, Worker, WorkerGroup, channel, manager, placement, dynamic_scheduler.
   - `utils/` – Logging, placement, data iter, distributed, checkpoint, resharding.

@@ -6,11 +6,6 @@
 #   1. submit_yam_beaker_cluster.sh starts a Beaker job with Ray head + GPUs (idle).
 #   2. This script joins the cluster from the desktop and runs training locally.
 #
-# NOTE: The canonical YAM configs (yam_ppo_openpi, yam_ppo_openpi_topreward) use
-# train_embodied_agent_marl.py with RemoteYamEnvWorker + RobotServerClient and
-# cluster.num_nodes: 1. For those configs, use submit_yam_training.sh instead —
-# it runs everything on Beaker.
-#
 # This script is useful when you have a custom config with env/yam (direct YAMEnv)
 # and a multi-node cluster layout that puts the env worker on the desktop.  In that
 # case the desktop joins as a Ray worker node and the training script drives the env
@@ -23,7 +18,7 @@ set -euo pipefail
 
 # --- Defaults ---
 HEAD_IP=""
-CONFIG_NAME="yam_ppo_openpi"
+CONFIG_NAME=""
 MODEL_PATH=""
 TASK_DESC="pick and place"
 NODE_RANK=1
@@ -43,7 +38,7 @@ Required:
   --head-ip IP          Beaker container Tailscale IP (from Beaker logs)
 
 Options:
-  --config NAME         Hydra config name (default: yam_ppo_openpi)
+  --config NAME         Hydra config name (required)
   --model-path PATH     Model checkpoint path
   --task DESC           Task description (default: "pick and place")
   --node-rank N         Desktop node rank (default: 1)
@@ -59,7 +54,7 @@ Examples:
       --head-ip 100.64.1.2 \
       --config my_custom_yam_config \
       --node-rank 1 \
-      --model-path /path/to/openpi-checkpoint \
+      --model-path /path/to/pi05-checkpoint \
       --task "pick and place"
 EOF
     exit 0
@@ -84,11 +79,16 @@ if [ -z "$HEAD_IP" ]; then
     echo ""
     usage
 fi
+if [ -z "$CONFIG_NAME" ]; then
+    echo "Error: --config is required"
+    echo ""
+    usage
+fi
 
 # --- Detect entry script ---
 ENTRY_SCRIPT="train_embodied_agent.py"
 case "$CONFIG_NAME" in
-    yam_ppo_openpi|yam_ppo_openpi_topreward|*marl*)
+    *marl*)
         ENTRY_SCRIPT="train_embodied_agent_marl.py"
         ;;
     *staged*)

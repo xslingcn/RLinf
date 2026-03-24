@@ -12,7 +12,6 @@ The script is organized by **targets** and **models**:
 - `embodied` target (embodied agents) with models:
 	- `openvla`
 	- `openvla-oft`
-	- `openpi`
 
 	Each embodied model also requires an `--env` argument to specify the environment, e.g. `maniskill_libero`, `behavior`, or `metaworld`.
 
@@ -33,6 +32,6 @@ deactivate
 
 You can override the default virtual environment directory using `--venv`. For example:
 ```shell
-bash requirements/install.sh embodied --model openpi --env maniskill_libero --venv openpi-venv
+bash requirements/install.sh embodied --model openvla --env maniskill_libero --venv embodied-venv
 ```
 ```

@@ -81,8 +81,8 @@ After completing the above configuration file modifications, run the following c
 .. note::
    If you installed **RLinf** via Docker image (see :doc:`./installation`), please ensure you have switched to the Python environment corresponding to the target model.
    The default environment is ``openvla``.
-   If using OpenVLA-OFT or openpi, please use the built-in script `switch_env` to switch environments:
-   ``source switch_env openvla-oft`` or ``source switch_env openpi``.
+   If using a non-default embodied model, please use the built-in script `switch_env` to switch environments:
+   ``source switch_env openvla-oft`` for OpenVLA-OFT, for example.
 
    If you installed **RLinf** in a custom environment, please ensure you have installed the dependencies for the corresponding model, see :doc:`./installation` for details.
 

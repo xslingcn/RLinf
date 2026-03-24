@@ -104,7 +104,7 @@ class EmbodiedSACFSDPPolicy(EmbodiedFSDPActor):
             self.target_model.requires_grad_(False)
             self.target_model_initialized = True
 
-        self.use_dsrl = self.cfg.actor.model.get("openpi", {}).get("use_dsrl", False)
+        self.use_dsrl = False
         use_dsrl = self.use_dsrl
         if use_dsrl:
             # DSRL: separate actor/critic encoders into different optimizer groups
@@ -340,7 +340,7 @@ class EmbodiedSACFSDPPolicy(EmbodiedFSDPActor):
         use_crossq = self.cfg.algorithm.get("q_head_type", "default") == "crossq"
         bootstrap_type = self.cfg.algorithm.get("bootstrap_type", "standard")
         agg_q = self.cfg.algorithm.get("agg_q", "min")
-        use_dsrl = self.cfg.actor.model.get("openpi", {}).get("use_dsrl", False)
+        use_dsrl = False
         if use_dsrl:
             num_action_chunks = self.cfg.actor.model.get("num_action_chunks", 1)
             discount = self.cfg.algorithm.gamma**num_action_chunks

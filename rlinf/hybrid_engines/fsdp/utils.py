@@ -96,7 +96,7 @@ def get_init_weight_context_manager(use_meta_tensor=True):
 
 def get_fsdp_wrap_policy(module, config=None, is_lora=False, model_type=None):
     """
-    FSDP wrap policy for RLinf's OpenPI-only embodied stack.
+    FSDP wrap policy for RLinf embodied models.
 
     Args:
         module: The model to wrap

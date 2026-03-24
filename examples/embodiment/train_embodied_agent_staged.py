@@ -22,13 +22,13 @@ signal). The planner runs Qwen3-VL-8B as a Ray actor.
 Usage::
 
     # Start Ray first (see CLAUDE.md: Multi-Node Setup)
-    bash examples/embodiment/run_embodiment.sh yam_ppo_openpi_topreward
+    bash examples/embodiment/run_embodiment.sh <your_config_name>
 
 Or directly::
 
     python examples/embodiment/train_embodied_agent_staged.py \
         --config-path examples/embodiment/config/ \
-        --config-name yam_ppo_openpi_topreward
+        --config-name <your_config_name>
 
 The config must contain a ``vlm_planner`` section and a node group labelled
 ``"beaker_vlm"`` in ``cluster.node_groups``. The VLMPlannerWorker is allocated
@@ -36,11 +36,9 @@ through RLinf's placement stack so it inherits the same GPU isolation model as
 actor and rollout workers, instead of relying on a standalone Ray ``num_gpus``
 reservation.
 
-Configs that use this entry point (auto-selected by run_embodiment.sh /
-run_realworld.sh / submit_yam_training.sh):
-  - ``yam_ppo_openpi``        — TOPReward only (``subtask_interval: 0``)
+Configs that use this entry point are selected by filename convention:
   - ``*topreward*``           — TOPReward + optional subtask planning
-  - ``*staged*``              — subtask planning + TOPReward (legacy pattern)
+  - ``*staged*``              — subtask planning + TOPReward
 
 Optional remote-desktop simulation:
   - Set ``env.remote_desktop_simulation.enabled: true`` when using
@@ -237,7 +235,7 @@ def _launch_vlm_planner(cfg, cluster: Cluster):
 @hydra.main(
     version_base="1.1",
     config_path="config",
-    config_name="yam_ppo_openpi_topreward",
+    config_name=None,
 )
 def main(cfg) -> None:
     cfg = validate_cfg(cfg)

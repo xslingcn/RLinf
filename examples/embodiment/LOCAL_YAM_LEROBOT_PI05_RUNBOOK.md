@@ -3,8 +3,7 @@
 This runbook describes the simplest local setup for running a LeRobot-exported
 `pi05` checkpoint against a YAM follower on a desktop machine.
 
-This branch uses the **LeRobot-only inference lane**. The legacy OpenPI lane is
-disabled here on purpose.
+This branch uses the **LeRobot-only inference lane**.
 
 ## Scope
 
@@ -18,8 +17,7 @@ This runbook covers:
 This runbook does **not** cover:
 
 - Beaker / remote training
-- the old OpenPI configs
-- direct desktop PPO training via `yam_ppo_openpi_desktop.yaml`
+- direct desktop PPO training
 
 ## Preconditions
 
@@ -240,17 +238,17 @@ Then run the same preview and inference commands against `localhost:50051`.
 
 ## Troubleshooting
 
-### `ModuleNotFoundError: openpi`
+### Stale config or stale environment errors
 
-This is expected if you try to use an old OpenPI config or code path on this
-branch. Use:
+This usually means you are trying to use an old config or an environment from a
+different branch. Use:
 
 - `--model-type lerobot_pi05`
 
 Do not use:
 
-- `model_type: openpi`
-- the old `yam_ppo_openpi*.yaml` training configs
+- configs copied from a different branch without migrating their model section
+- an environment that was built for an older embodied lane
 
 ### The policy complains about missing cameras
 
@@ -270,8 +268,8 @@ Check:
 
 ### I want direct desktop training with local YAMEnv
 
-That path is separate from this runbook. On this branch, the old
-`yam_ppo_openpi_desktop.yaml` config is not yet migrated to `lerobot_pi05`.
+That path is separate from this runbook. On this branch, local desktop training
+configs have not been migrated to `lerobot_pi05` yet.
 
 ## Verified Path on This Branch
 

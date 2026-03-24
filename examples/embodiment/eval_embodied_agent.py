@@ -28,9 +28,7 @@ from rlinf.workers.rollout.hf.huggingface_worker import MultiStepRolloutWorker
 mp.set_start_method("spawn", force=True)
 
 
-@hydra.main(
-    version_base="1.1", config_path="config", config_name="yam_ppo_openpi_desktop"
-)
+@hydra.main(version_base="1.1", config_path="config", config_name=None)
 def main(cfg) -> None:
     cfg.runner.only_eval = True
     cfg = validate_cfg(cfg)

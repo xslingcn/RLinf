@@ -82,8 +82,8 @@ ManiSkill3 是一个基于 GPU 加速的机器人研究仿真平台，
 .. note::
    如果你是通过 Docker 镜像安装的 **RLinf** （见 :doc:`./installation`），请确保已切换到目标模型对应的 Python 环境。
    默认环境为 ``openvla``。
-   若使用 OpenVLA-OFT 或 openpi，请使用内置脚本 `switch_env` 切换环境：
-   ``source switch_env openvla-oft`` 或 ``source switch_env openpi``。
+   若使用非默认的具身模型，请使用内置脚本 `switch_env` 切换环境：
+   例如 OpenVLA-OFT 使用 ``source switch_env openvla-oft``。
 
    如果你是通过自定义环境安装的 **RLinf**，请确保已安装对应模型的依赖，详见 :doc:`./installation`。
 

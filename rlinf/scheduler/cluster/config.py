@@ -189,7 +189,7 @@ class ClusterConfig:
           node_ranks: 0-7
           env_configs:
             - node_ranks: 0-7
-              python_interpreter_path: /opt/venv/openpi/bin/python3
+              python_interpreter_path: /opt/venv/openvla/bin/python3
               env_vars:
                 - GLOO_SOCKET_IFNAME: "eth0"
 

@@ -1,7 +1,7 @@
 具身智能场景
 ============
 
-具身智能场景包含SOTA模型（如pi0、pi0.5、OpenVLA-OFT）和不同模拟器（如LIBERO、ManiSkill、RoboTwin、MetaWorld）的训练示例，以及真机强化学习训练示例等。
+具身智能场景包含 SOTA 模型（如 OpenVLA、OpenVLA-OFT、GR00T、Dexbotic）和不同模拟器（如 LIBERO、ManiSkill）的训练示例，以及真机强化学习训练示例等。
 
 .. raw:: html
 
@@ -30,41 +30,9 @@
        </p>
      </div>
 
-     <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-       <img src="https://github.com/RLinf/misc/raw/main/pic/pi0_icon.jpg"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
-       <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-        <a href="pi0.html" style="text-decoration: underline; color: blue;">
-          <b>π₀和π₀.₅模型强化学习训练</b>
-         </a><br>
-         在π₀和π₀.₅上实现强化学习的效果跃升
-       </p>
-     </div>
    </div>
 
    <div style="display: flex; justify-content: center; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
-     <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-       <img src="https://github.com/RLinf/misc/raw/main/pic/behavior.jpg"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
-       <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-        <a href="behavior.html" style="text-decoration: underline; color: blue;">
-          <b>基于Behavior的强化学习</b>
-         </a><br>
-         支持Behavior+OpenVLA-OFT+PPO/GRPO训练
-       </p>
-     </div>
-
-     <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-       <img src="https://github.com/RLinf/misc/raw/main/pic/metaworld.png"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
-       <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-        <a href="metaworld.html" style="text-decoration: underline; color: blue;">
-          <b>基于MetaWorld的强化学习</b>
-         </a><br>
-         支持MetaWorld+π₀/π₀.₅+PPO/GRPO训练
-       </p>
-     </div>
-
      <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
        <img src="https://github.com/RLinf/misc/raw/main/pic/IsaacLab.png"
             style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
@@ -89,28 +57,6 @@
        </p>
      </div>
 
-     <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-       <img src="https://github.com/RLinf/misc/raw/main/pic/calvin.png"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);"
-            data-target="animated-image.originalImage">
-       <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-       <a href="calvin.html" style="text-decoration: underline; color: blue;">
-         <b>基于CALVIN的强化学习</b>
-         </a><br>
-         支持CALVIN+π₀/π₀.₅+PPO/GRPO训练
-       </p>
-     </div>
-
-     <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-       <img src="https://github.com/RLinf/misc/raw/main/pic/robocasa.jpeg"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
-       <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-        <a href="robocasa.html" style="text-decoration: underline; color: blue;">
-          <b>基于RoboCasa的强化学习</b>
-         </a><br>
-         支持RoboCasa+π₀+GRPO训练
-       </p>
-     </div>
    </div>
 
     <div style="display: flex; justify-content: center; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
@@ -137,17 +83,6 @@
         </p>
       </div>
 
-      <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-        <img src="https://raw.githubusercontent.com/RoboTwin-Platform/RoboTwin/main/assets/files/50_tasks.gif"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);"
-            data-target="animated-image.originalImage">
-        <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-          <a href="robotwin.html" style="text-decoration: underline; color: blue;">
-            <b>基于RoboTwin的强化学习</b>
-          </a><br>
-          支持RoboTwin + OpenVLA-OFT/π₀/π₀.₅ + PPO/GRPO训练
-        </p>
-      </div>
     </div>
 
     
@@ -191,17 +126,6 @@
 
     <div style="display: flex; justify-content: center; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
       <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-        <img src="https://github.com/RLinf/misc/raw/main/pic/gsenv.gif"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
-        <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-          <a href="gsenv.html" style="text-decoration: underline; color: blue;">
-            <b>基于 GSEnv 的 Real2Sim2Real 强化学习</b>
-          </a><br>
-          支持 GSEnv + π₀.₅ + PPO 训练
-        </p>
-      </div>
-
-      <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
        <img src="https://raw.githubusercontent.com/dexmal/dexbotic/main/resources/intro.png"
             style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
        <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
@@ -226,28 +150,6 @@
     </div>
 
     <div style="display: flex; justify-content: center; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
-      <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-       <img src="https://github.com/RLinf/misc/raw/main/pic/franka_arm_small.jpg"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
-       <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-        <a href="co_training.html" style="text-decoration: underline; color: blue;">
-          <b>仿真-真机协同训练</b>
-        </a><br>
-        仿真 PPO + 真机 SFT，提升 Sim-to-Real 迁移
-       </p>
-     </div>
-
-      <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
-       <img src="https://github.com/RLinf/misc/raw/main/pic/dsrl.png"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
-       <p style="margin-top: 8px; font-size: 14px; line-height: 1.4;">
-        <a href="dsrl.html" style="text-decoration: underline; color: blue;">
-          <b>DSRL：Pi0 噪声空间强化学习</b>
-        </a><br>
-        用轻量级 SAC 智能体在噪声空间引导冻结的 Pi0 扩散策略
-       </p>
-     </div>
-
      <div style="flex: 1 1 30%; max-width: 300px; text-align: center;">
       <img src="https://github.com/RLinf/misc/raw/main/pic/xsquare_turtle2_arm_small.jpg"
           style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />
@@ -267,25 +169,14 @@
 
    maniskill
    libero
-   behavior
-   metaworld
    isaaclab
-   calvin
-   robocasa
-   robotwin
    frankasim
    opensora
    wan
-   gsenv
-   pi0
    gr00t
    sac_flow
    mlp
    dexbotic
    franka
    xsquare_turtle2
-   sft_openpi
    sft_vlm
-   co_training
-   dsrl
-

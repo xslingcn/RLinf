@@ -153,31 +153,6 @@ def get_aggregate_function(name: str):
     return AGGREGATE_FUNCTIONS[name]
 
 
-def get_openpi_runtime_overrides(
-    config_name: str,
-    action_dim: int,
-    action_horizon: int,
-    action_chunk: int,
-    num_steps: int,
-    num_images_in_input: int,
-    discrete_state_input: bool,
-) -> dict:
-    """Build runtime overrides for OpenPI inference presets."""
-    return {
-        "config_name": config_name,
-        "num_images_in_input": num_images_in_input,
-        "noise_method": "flow_sde",
-        "action_horizon": action_horizon,
-        "action_chunk": action_chunk,
-        "num_steps": num_steps,
-        "train_expert_only": True,
-        "action_env_dim": action_dim,
-        "add_value_head": False,
-        "value_after_vlm": False,
-        "discrete_state_input": discrete_state_input,
-    }
-
-
 def connect_to_server(server_url: str, timeout: float = 30.0):
     """Connect to RobotServer and return (stub, spaces)."""
     max_msg = 16 * 1024 * 1024
@@ -245,7 +220,7 @@ def proto_to_obs(proto_obs, h: int, w: int) -> dict:
 
     obs = {
         "states": torch.from_numpy(states.copy()).float(),
-        # Keep images as uint8 to match the native PI0.5/OpenPI inference path.
+        # Keep images as uint8 to match the native PI0.5 inference path.
         # The downstream image parser interprets floating-point images as already
         # normalized to [0, 1] and rescales them by 255, which corrupts inputs
         # if we pass float images in the raw 0..255 range.
@@ -278,21 +253,11 @@ def proto_to_obs(proto_obs, h: int, w: int) -> dict:
 def load_model(
     model_type: str,
     model_path: str,
-    config_name: str,
-    action_dim: int,
-    action_horizon: int,
     action_chunk: int,
     num_steps: int,
-    num_images_in_input: int,
-    discrete_state_input: bool,
     camera_bindings: dict[str, str] | None = None,
 ):
     """Load the configured embodied model for local inference."""
-    if model_type == "openpi":
-        raise NotImplementedError(
-            "OpenPI inference is disabled in this RLinf-lerobot worktree. "
-            "Use --model-type lerobot_pi05."
-        )
     if model_type == "lerobot_pi05":
         cfg = OmegaConf.create(
             {
@@ -860,7 +825,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--model-type",
         type=str,
         default="lerobot_pi05",
-        choices=["lerobot_pi05", "openpi"],
+        choices=["lerobot_pi05"],
         help="Embodied model family to load.",
     )
     parser.add_argument(
@@ -868,12 +833,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=str,
         default="/home/xsling/Model/folding_towel_pi05",
         help="HuggingFace model ID or local path",
-    )
-    parser.add_argument(
-        "--config-name",
-        type=str,
-        default="pi05_libero",
-        help="OpenPI config name",
     )
     parser.add_argument(
         "--server-url",
@@ -894,28 +853,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Environment action dimension. Defaults to the RobotServer action_dim.",
     )
     parser.add_argument(
-        "--action-horizon",
-        type=int,
-        default=10,
-        help="Model action horizon used when constructing OpenPI runtime overrides",
-    )
-    parser.add_argument(
         "--action-chunk",
         type=int,
         default=30,
         help="Number of actions to execute per inference call",
-    )
-    parser.add_argument(
-        "--num-images-in-input",
-        type=int,
-        default=2,
-        help="Number of image streams expected by the OpenPI checkpoint",
-    )
-    parser.add_argument(
-        "--discrete-state-input",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Whether the OpenPI checkpoint expects discretized state inputs",
     )
     parser.add_argument(
         "--num-steps",
@@ -1001,18 +942,12 @@ def main():
     stub, spaces, channel = connect_to_server(args.server_url, args.connect_timeout)
 
     # Load model
-    action_dim = args.action_dim if args.action_dim is not None else spaces.action_dim
     camera_bindings = parse_camera_bindings(args.camera_binding)
     model = load_model(
         args.model_type,
         args.model_path,
-        args.config_name,
-        action_dim,
-        args.action_horizon,
         args.action_chunk,
         args.num_steps,
-        args.num_images_in_input,
-        args.discrete_state_input,
         camera_bindings=camera_bindings,
     )
     if sys.stdin.isatty():

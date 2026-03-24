@@ -12,10 +12,11 @@ docker build -f docker/Dockerfile --build-arg BUILD_TARGET=$BUILD_TARGET -t rlin
 
 The built Docker image contains one or multiple Python virtual environments (venv) in the `/opt/venv` directory, depending on the `BUILD_TARGET`.
 
-Currently, the embodied image contains three venvs named `openvla`, `openvla-oft` and `openpi` in `/opt/venv/`.
+Depending on the build target, the embodied image may contain one or more venvs
+such as `openvla`, `openvla-oft`, `gr00t`, or `dexbotic` in `/opt/venv/`.
 
 To switch to the desired venv, we have a built-in script `switch_env` that can switch among venvs in a single command.
 
 ```shell
-source switch_env <env_name> # e.g., source switch_env openvla-oft, source switch_env openpi, etc.
+source switch_env <env_name> # e.g., source switch_env openvla or source switch_env openvla-oft
 ```

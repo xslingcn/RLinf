@@ -6,10 +6,8 @@ ARG BUILD_TARGET=embodied-maniskill_libero
 ##################################################################################################
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-maniskill_libero
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-behavior-openvlaoft
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-behavior-openpi
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-metaworld
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-calvin
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-robocasa
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-isaaclab
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-robotwin
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base-image-embodied-opensora
@@ -111,13 +109,6 @@ if [ -d /opt/assets/.sapien ]; then
     fi
     ln -s /opt/assets/.sapien ~/.sapien
 fi
-mkdir -p ~/.cache
-if [ -d /opt/assets/.cache/openpi ]; then
-    if [ -d ~/.cache/openpi ]; then
-        rm -rf ~/.cache/openpi
-    fi
-    ln -s /opt/assets/.cache/openpi ~/.cache/openpi
-fi
 EOF
 RUN chmod +x /usr/local/bin/link_assets
 
@@ -133,11 +124,10 @@ FROM embodied-common-image AS embodied-maniskill_libero-image
 # Install openvla env
 RUN bash requirements/install.sh embodied --venv openvla --model openvla --env maniskill_libero && \
     bash requirements/install.sh embodied --venv openvla-oft --model openvla-oft --env maniskill_libero && \
-    bash requirements/install.sh embodied --venv openpi --model openpi --env maniskill_libero && \
     bash requirements/install.sh embodied --venv gr00t --model gr00t --env maniskill_libero && \
     bash requirements/install.sh embodied --venv dexbotic --model dexbotic --env maniskill_libero
 
-RUN source switch_env openvla && download_assets --dir /opt/assets --assets maniskill,openpi
+RUN source switch_env openvla && download_assets --dir /opt/assets --assets maniskill
 RUN link_assets
 
 # Set default env
@@ -154,34 +144,13 @@ RUN source switch_env openvla-oft && python -c "import omnigibson as og; cfg={};
 # Set default env
 RUN echo "source ${UV_PATH}/openvla-oft/bin/activate" >> ~/.bashrc
 
-FROM embodied-common-image AS embodied-behavior-openpi-image
-
-# Install openpi env
-RUN bash requirements/install.sh embodied --venv openpi --model openpi --env behavior
-
-# omnigibson downloads assets to /tmp during initialization
-RUN source switch_env openpi && python -c "import omnigibson as og; cfg={}; og.Environment(cfg); og.shutdown()" || exit 0
-
-RUN source switch_env openpi && download_assets --dir /opt/assets --assets openpi
-RUN link_assets
-
-# Set default env
-RUN echo "source ${UV_PATH}/openpi/bin/activate" >> ~/.bashrc
-
-##################################################################################################
-# Embodied: MetaWorld
-##################################################################################################
 FROM embodied-common-image AS embodied-metaworld-image
 
-# Install openvla-oft and openpi envs
-RUN bash requirements/install.sh embodied --venv openvla-oft --model openvla-oft --env metaworld && \
-    bash requirements/install.sh embodied --venv openpi --model openpi --env metaworld
-
-RUN source switch_env openpi && download_assets --dir /opt/assets --assets openpi
-RUN link_assets
+# Install openvla-oft env
+RUN bash requirements/install.sh embodied --venv openvla-oft --model openvla-oft --env metaworld
 
 # Set default env
-RUN echo "source ${UV_PATH}/openpi/bin/activate" >> ~/.bashrc
+RUN echo "source ${UV_PATH}/openvla-oft/bin/activate" >> ~/.bashrc
 
 
 ##################################################################################################
@@ -189,30 +158,11 @@ RUN echo "source ${UV_PATH}/openpi/bin/activate" >> ~/.bashrc
 ##################################################################################################
 FROM embodied-common-image AS embodied-calvin-image
 
-# Install openvla-oft and openpi envs
-RUN bash requirements/install.sh embodied --venv openvla-oft --model openvla-oft --env calvin && \
-    bash requirements/install.sh embodied --venv openpi --model openpi --env calvin
-
-RUN source switch_env openpi && download_assets --dir /opt/assets --assets openpi
-RUN link_assets
+# Install openvla-oft env
+RUN bash requirements/install.sh embodied --venv openvla-oft --model openvla-oft --env calvin
 
 # Set default env
-RUN echo "source ${UV_PATH}/openpi/bin/activate" >> ~/.bashrc
-
-
-##################################################################################################
-# Embodied: RoboCasa
-##################################################################################################
-FROM embodied-common-image AS embodied-robocasa-image
-
-# Install openpi env
-RUN bash requirements/install.sh embodied --venv openpi --model openpi --env robocasa
-
-RUN source switch_env openpi && download_assets --dir /opt/assets --assets openpi
-RUN link_assets
-
-# Set default env
-RUN echo "source ${UV_PATH}/openpi/bin/activate" >> ~/.bashrc
+RUN echo "source ${UV_PATH}/openvla-oft/bin/activate" >> ~/.bashrc
 
 
 ##################################################################################################
@@ -247,11 +197,7 @@ RUN echo "source ${UV_PATH}/franka-0.15.0/bin/activate" >> ~/.bashrc
 FROM embodied-common-image AS embodied-robotwin-image
 
 # Install openvla-oft env
-RUN bash requirements/install.sh embodied --venv openvla-oft --model openvla-oft --env robotwin && \
-    bash requirements/install.sh embodied --venv openpi --model openpi --env robotwin
-
-RUN source switch_env openpi && download_assets --dir /opt/assets --assets openpi
-RUN link_assets
+RUN bash requirements/install.sh embodied --venv openvla-oft --model openvla-oft --env robotwin
 
 # Set default env
 RUN echo "source ${UV_PATH}/openvla-oft/bin/activate" >> ~/.bashrc

@@ -9,16 +9,16 @@ export PYOPENGL_PLATFORM="egl"
 export PYTHONPATH=${REPO_PATH}:$PYTHONPATH
 
 if [ -z "$1" ]; then
-    CONFIG_NAME="yam_ppo_openpi_topreward"
-else
-    CONFIG_NAME=$1
+    echo "Usage: bash examples/embodiment/run_embodiment.sh <config-name> [ROBOT_PLATFORM]" >&2
+    exit 1
 fi
+CONFIG_NAME=$1
 
 # Auto-select entry script:
 #   - YAM marl configs use train_embodied_agent_marl.py
 #   - explicit staged configs use train_embodied_agent_staged.py
 case "$CONFIG_NAME" in
-    yam_ppo_openpi|yam_ppo_openpi_topreward|*marl*)
+    *marl*)
         SRC_FILE="${EMBODIED_PATH}/train_embodied_agent_marl.py"
         ;;
     *staged*)

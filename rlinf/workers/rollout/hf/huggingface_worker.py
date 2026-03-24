@@ -21,7 +21,6 @@ import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
 from tqdm import tqdm
 
-from rlinf.config import SupportedModel
 from rlinf.data.embodied_io_struct import (
     RolloutResult,
 )
@@ -204,9 +203,6 @@ class MultiStepRolloutWorker(Worker):
             if mode == "train"
             else self._eval_sampling_params
         )
-
-        if SupportedModel(self.cfg.actor.model.model_type) == SupportedModel.OPENPI:
-            kwargs = {"mode": mode}
 
         with torch.no_grad():
             actions, result = self.hf_model.predict_action_batch(

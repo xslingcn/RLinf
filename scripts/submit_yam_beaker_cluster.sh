@@ -9,10 +9,6 @@
 # The env worker runs directly on the desktop with YAMEnv — no gRPC, no SSH tunnel,
 # no RemoteEnv. The Beaker node only provides GPUs for actor/rollout workers.
 #
-# Supported configs (both use TOPReward, both need 3 GPUs):
-#   yam_ppo_openpi           — 3 GPUs (actor + rollout + VLM TOPReward on Beaker)
-#   yam_ppo_openpi_topreward — 3 GPUs (actor + rollout + VLM TOPReward + subtask planning)
-#
 # Prerequisites:
 #   gantry installed: pip install beaker-gantry
 #
@@ -22,7 +18,7 @@
 set -euo pipefail
 
 # --- Defaults ---
-CONFIG_NAME="yam_ppo_openpi"
+CONFIG_NAME=""
 EXP_NAME=""
 GPUS=0  # 0 = auto-detect based on config
 CLUSTER="ai2/ceres-cirrascale"
@@ -35,7 +31,7 @@ ALLOW_DIRTY=""
 
 BEAKER_IMAGE="shiruic/shirui-torch2.8.0_cuda12.8"
 WEKA_MOUNT="oe-training-default:/weka/oe-training-default"
-INSTALL_CMD="bash requirements/install.sh embodied --model openpi --env remote"
+INSTALL_CMD="uv sync --python 3.12.3 --extra embodied"
 RAY_PORT=6379
 
 usage() {
@@ -45,12 +41,8 @@ Usage: bash scripts/submit_yam_beaker_cluster.sh [OPTIONS]
 Submit a Beaker job that starts Ray head with GPUs and idles, waiting for a
 desktop worker to join and run training via join_beaker_cluster.sh.
 
-Supported configs:
-  yam_ppo_openpi             3 GPUs (actor + rollout + VLM TOPReward)
-  yam_ppo_openpi_topreward   3 GPUs (actor + rollout + VLM TOPReward + subtask planning)
-
 Options:
-  --config NAME         Hydra config name for GPU auto-detection (default: yam_ppo_openpi)
+  --config NAME         Hydra config name for GPU auto-detection (required)
   --gpus N              GPUs (0 = auto based on config)
   --name NAME           Experiment name (default: rlinf-cluster-<config>)
   --cluster CLUSTER     Beaker cluster (default: ai2/ceres-cirrascale)
@@ -67,8 +59,8 @@ After submission:
   2. Join the cluster from your desktop:
        bash scripts/join_beaker_cluster.sh \
            --head-ip <tailscale-ip> \
-           --config yam_ppo_openpi \
-           --model-path /path/to/openpi-checkpoint \
+           --config my_config \
+           --model-path /path/to/pi05-checkpoint \
            --task "pick and place"
 EOF
     exit 0
@@ -94,10 +86,15 @@ done
 if [ -z "$EXP_NAME" ]; then
     EXP_NAME="rlinf-cluster-${CONFIG_NAME}"
 fi
+if [ -z "$CONFIG_NAME" ]; then
+    echo "Error: --config is required"
+    echo ""
+    usage
+fi
 
 # --- Auto-detect GPU count from config ---
 case "$CONFIG_NAME" in
-    *topreward*|*staged*|yam_ppo_openpi)
+    *topreward*|*staged*|*marl*)
         # All YAM configs use TOPReward and need 3 GPUs.
         [ "$GPUS" -eq 0 ] && GPUS=3
         ;;
@@ -192,7 +189,7 @@ echo "  2. Join from desktop:"
 echo "       bash scripts/join_beaker_cluster.sh \\"
 echo "           --head-ip <tailscale-ip> \\"
 echo "           --config ${CONFIG_NAME} \\"
-echo "           --model-path /path/to/openpi-checkpoint \\"
+echo "           --model-path /path/to/pi05-checkpoint \\"
 echo "           --task \"pick and place\""
 echo ""
 

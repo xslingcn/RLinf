@@ -107,7 +107,7 @@ Inside the container, clone the RLinf repository:
    git clone https://github.com/RLinf/RLinf.git
    cd RLinf
 
-The embodied image contains multiple Python virtual environments (venv) located in the `/opt/venv` directory for different models, namely ``openvla``, ``openvla-oft``, and ``openpi``.
+The embodied image contains multiple Python virtual environments (venv) located in the `/opt/venv` directory for different models, such as ``openvla``, ``openvla-oft``, ``gr00t``, and ``dexbotic``.
 The default environment is set to ``openvla``.
 To switch to the desired venv, use the built-in script `switch_env`:
 
@@ -116,7 +116,6 @@ To switch to the desired venv, use the built-in script `switch_env`:
    source switch_env <env_name>
    # source switch_env openvla
    # source switch_env openvla-oft
-   # source switch_env openpi
 
 .. note::
 
@@ -129,7 +128,7 @@ Installation Method 2: UV Custom Environment
 You can install the dependencies for the target experiments using the `install.sh` script under the `requirements/` folder.
 The script is organized by *targets* and *models*:
 
-- ``embodied`` target (for embodied agents) with different models specified via `--model`, e.g., ``openvla``, ``openvla-oft`` or ``openpi``.
+- ``embodied`` target (for embodied agents) with different models specified via `--model`, e.g., ``openvla``, ``openvla-oft``, ``gr00t``, or ``dexbotic``.
 
   Each embodied model also requires an ``--env`` argument to specify the environment, e.g. ``maniskill_libero``, ``behavior`` or ``metaworld``.
 
@@ -161,8 +160,8 @@ You can override the default virtual environment directory using ``--venv``. For
 
 .. code-block:: shell
 
-  bash requirements/install.sh embodied --model openpi --env maniskill_libero --venv openpi-venv
-  source openpi-venv/bin/activate
+  bash requirements/install.sh embodied --model openvla-oft --env metaworld --venv embodied-venv
+  source embodied-venv/bin/activate
 
 .. _install-as-library:
 
