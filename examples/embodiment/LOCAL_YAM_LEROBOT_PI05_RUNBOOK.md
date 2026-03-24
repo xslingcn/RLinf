@@ -29,7 +29,7 @@ You need:
 - the project environment synced
 - a local LeRobot `pi05` checkpoint, for example:
   - `/home/xsling/Model/folding_towel_pi05`
-- working YAM robot configs for the left and right follower arms
+- local YAM follower servers or the checked-in follower launcher
 - camera configs if you want live images
 
 Recommended setup:
@@ -62,16 +62,33 @@ So the safest local YAM setup is:
 If your camera layout is different, override it with `--camera-binding` when
 starting inference.
 
-## Step 1: Prepare a YAM env config
+## Step 1: Start from the checked-in follower env config
 
-Create a local env YAML, for example `~/yam_local_pi05.yaml`.
+This branch now includes a concrete local follower config:
 
-Minimum shape:
+- [yam_pi05_follower.yaml](/home/xsling/Code/mma2rl/RLinf-lerobot/examples/embodiment/config/env/yam_pi05_follower.yaml)
+- [yam_follower_left.yaml](/home/xsling/Code/mma2rl/RLinf-lerobot/examples/embodiment/config/env/robot_clients/yam_follower_left.yaml)
+- [yam_follower_right.yaml](/home/xsling/Code/mma2rl/RLinf-lerobot/examples/embodiment/config/env/robot_clients/yam_follower_right.yaml)
+
+It is wired for the standard local follower setup:
+
+- right follower server on `127.0.0.1:1234`
+- left follower server on `127.0.0.1:1235`
+- top / left / right RealSense cameras at `640x360`
+
+Before you start, edit this file if your hardware differs:
+
+- `task_description`
+- camera serial numbers under `camera_cfgs`
+- CAN channel / port settings if your follower setup is non-default
+
+The current checked-in shape is:
 
 ```yaml
+env_type: yam
 is_dummy: false
-control_rate_hz: 10.0
-max_episode_steps: 100
+control_rate_hz: 30.0
+max_episode_steps: 10000
 
 img_height: 360
 img_width: 640
@@ -85,66 +102,63 @@ task_description: "fold the towel"
 
 robot_cfgs:
   left:
-    - /absolute/path/to/yam_left.yaml
+    - examples/embodiment/config/env/robot_clients/yam_follower_left.yaml
   right:
-    - /absolute/path/to/yam_right.yaml
+    - examples/embodiment/config/env/robot_clients/yam_follower_right.yaml
 
 camera_cfgs:
   cam_top:
     _target_: yam_realtime.sensors.cameras.camera.CameraNode
     camera:
-      _target_: yam_realtime.sensors.cameras.opencv_camera.OpencvCamera
-      device_path: /dev/video0
+      _target_: rlinf.envs.yam.realsense_camera.RealsenseCamera
+      serial_number: "215222073684"
+      resolution: [640, 360]
+      fps: 30
   cam_left:
     _target_: yam_realtime.sensors.cameras.camera.CameraNode
     camera:
-      _target_: yam_realtime.sensors.cameras.opencv_camera.OpencvCamera
-      device_path: /dev/video1
+      _target_: rlinf.envs.yam.realsense_camera.RealsenseCamera
+      serial_number: "218622275075"
+      resolution: [640, 360]
+      fps: 30
   cam_right:
     _target_: yam_realtime.sensors.cameras.camera.CameraNode
     camera:
-      _target_: yam_realtime.sensors.cameras.opencv_camera.OpencvCamera
-      device_path: /dev/video2
+      _target_: rlinf.envs.yam.realsense_camera.RealsenseCamera
+      serial_number: "128422272697"
+      resolution: [640, 360]
+      fps: 30
 ```
 
 Notes:
 
-- `robot_cfgs.left/right` are required for real hardware.
-- `camera_cfgs` is optional, but your towel-folding policy will not be useful
-  without real image inputs.
+- `robot_cfgs.left/right` point to the follower-client configs on this branch.
+- `camera_cfgs` is still machine-specific. Update serial numbers for your desktop.
 - `img_height` and `img_width` should match what your server returns. The
   current local bundle was trained with raw image feature shapes
   `(3, 360, 640)`.
 
-## Step 2: Reset CAN and start the local RobotServer
+## Step 2: Start follower servers and the local RobotServer
 
-Reset the CAN interfaces first:
-
-```bash
-cd /home/xsling/Code/mma2rl/RLinf-lerobot
-source .venv/bin/activate
-
-bash third_party/yam_realtime/yam_realtime/scripts/reset_all_can.sh
-```
-
-Start the local gRPC server:
+Use the checked-in helper:
 
 ```bash
 cd /home/xsling/Code/mma2rl/RLinf-lerobot
 source .venv/bin/activate
 
-python -m rlinf.envs.yam.remote.robot_server \
-  --config-path ~/yam_local_pi05.yaml \
-  --port 50051 \
-  --max-message-size 33554432
+bash scripts/start_robot_server.sh \
+  --config examples/embodiment/config/env/yam_pi05_follower.yaml \
+  --use-follower-servers \
+  --no-tunnel
 ```
 
 Notes:
 
-- This is the most direct path on this branch.
-- `scripts/start_robot_server.sh` still contains old path assumptions for CAN
-  reset. Use the explicit commands above unless you have already updated that
-  helper locally.
+- This resets CAN, starts both follower servers, and then starts the local
+  `RobotServer` on `localhost:50051`.
+- If you already run follower servers yourself, omit `--use-follower-servers`.
+- If you need the old low-level path, `python -m rlinf.envs.yam.remote.robot_server`
+  still works, but the helper above is the standard path on this branch.
 
 ## Step 3: Preview the camera streams
 
@@ -216,10 +230,9 @@ python examples/embodiment/infer_embodied_agent.py \
 If you only want to validate the transport path without real hardware:
 
 ```bash
-python -m rlinf.envs.yam.remote.robot_server \
-  --config-path ~/yam_local_pi05.yaml \
-  --port 50051 \
-  --max-message-size 33554432 \
+bash scripts/start_robot_server.sh \
+  --config examples/embodiment/config/env/yam_pi05_follower.yaml \
+  --no-tunnel \
   --dummy
 ```
 

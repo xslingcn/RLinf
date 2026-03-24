@@ -26,6 +26,9 @@
 #   --port PORT           gRPC server port (default: 50051)
 #   --remote-host HOST    Beaker Tailscale hostname or IP (default: beaker-0)
 #   --remote-user USER    SSH user on the Beaker container (default: shiruic)
+#   --use-follower-servers  Launch YAM follower servers on 1234/1235 first
+#   --gripper-open VAL    Optional gripper open limit for follower startup
+#   --gripper-close VAL   Optional gripper close limit for follower startup
 #   --allow-plain-ssh     Allow fallback to plain ssh if autossh is unavailable
 #   --no-tunnel           Start RobotServer only, no SSH tunnel
 #   --dummy               Run without real hardware (zero observations)
@@ -37,12 +40,18 @@ CONFIG=""
 PORT=50051
 REMOTE_HOST="beaker-0"
 REMOTE_USER="shiruic"
+USE_FOLLOWER_SERVERS=false
+GRIPPER_OPEN=""
+GRIPPER_CLOSE=""
 ALLOW_PLAIN_SSH=false
 NO_TUNNEL=false
 DUMMY=false
+FOLLOWER_PID=""
 TUNNEL_PID=""
 TUNNEL_LOG=""
 TUNNEL_LAUNCHER=""
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 usage() {
     cat <<'EOF'
@@ -57,6 +66,9 @@ Options:
   --port PORT           gRPC server port (default: 50051)
   --remote-host HOST    Beaker Tailscale hostname or IP (default: beaker-0)
   --remote-user USER    SSH user on the Beaker container (default: shiruic)
+  --use-follower-servers  Launch YAM follower servers on 1234/1235 first
+  --gripper-open VAL    Optional gripper open limit for follower startup
+  --gripper-close VAL   Optional gripper close limit for follower startup
   --allow-plain-ssh     Allow fallback to plain ssh if autossh is unavailable
   --no-tunnel           Start RobotServer only, without SSH tunnel
   --dummy               Run without real hardware (zero observations)
@@ -70,6 +82,11 @@ Examples:
   # Local only (no tunnel, for testing):
   bash scripts/start_robot_server.sh --config /path/to/env.yaml \
       --no-tunnel --dummy
+
+  # YAM follower servers + RobotServer:
+  bash scripts/start_robot_server.sh \
+      --config examples/embodiment/config/env/yam_pi05_follower.yaml \
+      --use-follower-servers --no-tunnel
 
   # Explicit IP instead of hostname (e.g. for one-off debugging):
   bash scripts/start_robot_server.sh \
@@ -86,6 +103,9 @@ while [[ $# -gt 0 ]]; do
         --port)         PORT="$2"; shift 2 ;;
         --remote-host)  REMOTE_HOST="$2"; shift 2 ;;
         --remote-user)  REMOTE_USER="$2"; shift 2 ;;
+        --use-follower-servers) USE_FOLLOWER_SERVERS=true; shift ;;
+        --gripper-open) GRIPPER_OPEN="$2"; shift 2 ;;
+        --gripper-close) GRIPPER_CLOSE="$2"; shift 2 ;;
         --allow-plain-ssh) ALLOW_PLAIN_SSH=true; shift ;;
         --no-tunnel)    NO_TUNNEL=true; shift ;;
         --dummy)        DUMMY=true; shift ;;
@@ -110,6 +130,31 @@ trap cleanup EXIT INT TERM
 
 is_ipv4_address() {
     [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]
+}
+
+wait_for_local_port() {
+    local port="$1"
+    local timeout_s="$2"
+    python - "$port" "$timeout_s" <<'PY'
+import socket
+import sys
+import time
+
+port = int(sys.argv[1])
+timeout_s = float(sys.argv[2])
+deadline = time.time() + timeout_s
+
+while time.time() < deadline:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        try:
+            sock.connect(("127.0.0.1", port))
+        except OSError:
+            time.sleep(0.25)
+            continue
+        sys.exit(0)
+sys.exit(1)
+PY
 }
 
 validate_tunnel_prereqs() {
@@ -174,9 +219,47 @@ print_tunnel_failure_hint() {
     echo "RobotServer is still running (PID ${SERVER_PID}). Tunnel is NOT active."
 }
 
+resolve_can_reset_script() {
+    local candidates=(
+        "${REPO_ROOT}/third_party/yam_realtime/yam_realtime/scripts/reset_all_can.sh"
+        "${REPO_ROOT}/YAM/yam_realtime/yam_realtime/scripts/reset_all_can.sh"
+    )
+    local candidate
+    for candidate in "${candidates[@]}"; do
+        if [ -f "${candidate}" ]; then
+            printf '%s\n' "${candidate}"
+            return 0
+        fi
+    done
+    return 1
+}
+
 echo "=== Resetting CAN interfaces ==="
-bash YAM/yam_realtime/yam_realtime/scripts/reset_all_can.sh
+CAN_RESET_SCRIPT="$(resolve_can_reset_script)" || {
+    echo "ERROR: could not find reset_all_can.sh under ${REPO_ROOT}."
+    exit 1
+}
+bash "${CAN_RESET_SCRIPT}"
 echo ""
+
+if [ "$USE_FOLLOWER_SERVERS" = true ]; then
+    echo "=== Starting YAM follower servers ==="
+    FOLLOWER_ARGS=()
+    [ -n "$GRIPPER_OPEN" ] && FOLLOWER_ARGS+=(--gripper-open "$GRIPPER_OPEN")
+    [ -n "$GRIPPER_CLOSE" ] && FOLLOWER_ARGS+=(--gripper-close "$GRIPPER_CLOSE")
+
+    python "${SCRIPT_DIR}/start_yam_follower_servers.py" "${FOLLOWER_ARGS[@]}" &
+    FOLLOWER_PID=$!
+    echo "Follower launcher PID: ${FOLLOWER_PID}"
+    echo "Waiting for follower servers on localhost:1234 and localhost:1235..."
+
+    if ! wait_for_local_port 1234 20 || ! wait_for_local_port 1235 20; then
+        echo "ERROR: follower servers did not become ready within 20 seconds."
+        exit 1
+    fi
+    echo "Follower servers are ready."
+    echo ""
+fi
 
 echo "=== Starting RobotServer ==="
 echo "Config: ${CONFIG}"
