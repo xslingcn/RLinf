@@ -38,6 +38,7 @@ set -euo pipefail
 
 CONFIG=""
 PORT=50051
+MAX_MESSAGE_SIZE=67108864
 REMOTE_HOST="beaker-0"
 REMOTE_USER="shiruic"
 USE_FOLLOWER_SERVERS=false
@@ -245,9 +246,14 @@ fi
 echo "=== Starting RobotServer ==="
 echo "Config: ${CONFIG}"
 echo "Port:   ${PORT}"
+echo "Max message size: ${MAX_MESSAGE_SIZE}"
 echo ""
 
-SERVER_ARGS=(--config-path "${CONFIG}" --port "${PORT}")
+SERVER_ARGS=(
+    --config-path "${CONFIG}"
+    --port "${PORT}"
+    --max-message-size "${MAX_MESSAGE_SIZE}"
+)
 [ "$DUMMY" = true ] && SERVER_ARGS+=(--dummy)
 
 python -m rlinf.envs.remote.robot_server "${SERVER_ARGS[@]}" &

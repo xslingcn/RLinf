@@ -231,6 +231,12 @@ class PI05PolicyAdapter(torch.nn.Module, BasePolicy):
                 noise_scheduler_type="learn",
             )
 
+    def freeze_vlm(self) -> None:
+        """Freeze the PaliGemma trunk while keeping the expert/value heads trainable."""
+        self.model.paligemma_with_expert.paligemma.eval()
+        for param in self.model.paligemma_with_expert.paligemma.parameters():
+            param.requires_grad = False
+
     def _load_weights(self) -> None:
         state_dict = load_file(
             str(Path(self.checkpoint_dir) / "model.safetensors"), device="cpu"
@@ -725,6 +731,7 @@ def get_model(cfg, torch_dtype=None):
     safe_get_logprob = getattr(openpi_cfg, "safe_get_logprob", False)
     value_after_vlm = getattr(openpi_cfg, "value_after_vlm", False)
     value_vlm_mode = getattr(openpi_cfg, "value_vlm_mode", "mean_token")
+    train_expert_only = getattr(openpi_cfg, "train_expert_only", False)
     model = PI05PolicyAdapter(
         checkpoint_dir,
         action_chunk=action_chunk,
@@ -741,6 +748,8 @@ def get_model(cfg, torch_dtype=None):
         value_after_vlm=value_after_vlm,
         value_vlm_mode=value_vlm_mode,
     )
+    if train_expert_only:
+        model.freeze_vlm()
     return model
 
 

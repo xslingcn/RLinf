@@ -53,7 +53,6 @@ Optional remote-desktop simulation:
 import json
 
 import hydra
-import ray
 import torch.multiprocessing as mp
 from omegaconf.omegaconf import OmegaConf
 
@@ -229,8 +228,6 @@ def _launch_vlm_planner(cfg, cluster: Cluster):
         cls_kwargs={},
     )
 
-    # Verify the actor started successfully (will raise if __init__ fails).
-    ray.get(vlm_actor.get_memory_text.remote())
     return vlm_actor
 
 
