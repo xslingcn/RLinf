@@ -85,7 +85,7 @@ runner:
   weight_sync_interval: 1
 
 algorithm:
-  normalize_advantages: True
+  normalize_advantages: False
   kl_penalty: kl
   group_size: 1
   reward_coef: 1.0
@@ -150,7 +150,7 @@ env:
   train:
     total_num_envs: 1
     max_episode_steps: 100
-    max_steps_per_rollout_epoch: 100
+    max_steps_per_rollout_epoch: 60
     control_rate_hz: 10.0
 
     # Task description must be a concrete episode goal, not a generic capability
@@ -167,12 +167,12 @@ env:
     top_reward_instruction_source: initial_task
 
     # Subtask update interval in CHUNK STEPS (0 to disable VLM planning).
-    # With num_action_chunks=10 and max_steps_per_rollout_epoch=100,
-    # n_train_chunk_steps=10. The EnvWorker resets the subtask counter at the
+    # With num_action_chunks=30 and max_steps_per_rollout_epoch=60,
+    # n_train_chunk_steps=2. The EnvWorker resets the subtask counter at the
     # start of each rollout epoch (bootstrap_step), so subtask_interval must
     # be <= n_train_chunk_steps to fire within an episode.
-    # 3 chunk steps = 30 env steps = subtask update at 30%, 60%, 90% of episode.
-    subtask_interval: 3
+    # 1 chunk step = 30 env steps = subtask update at ~50% and ~100% of episode.
+    subtask_interval: 1
 
     # Dummy mode: controlled at the ROBOT SERVER, not here.
     # RemoteEnv does not read is_dummy — it proxies calls over gRPC to the server.
@@ -182,7 +182,7 @@ env:
   eval:
     total_num_envs: 1
     max_episode_steps: 100
-    max_steps_per_rollout_epoch: 100
+    max_steps_per_rollout_epoch: 60
     control_rate_hz: 10.0
     task_description: "fold the towel"
 
@@ -227,10 +227,10 @@ actor:
   group_name: "ActorGroup"
   training_backend: "fsdp"
 
-  # rollout_size = n_chunk_steps * total_num_envs * rollout_epoch = 10 * 1 * 1 = 10
+  # rollout_size = n_chunk_steps * total_num_envs * rollout_epoch = 2 * 1 * 1 = 2
   # global_batch_size must divide rollout_size; micro_batch_size must divide global_batch_size.
-  micro_batch_size: 10
-  global_batch_size: 10
+  micro_batch_size: 2
+  global_batch_size: 2
   seed: 42
   enable_offload: False
 
@@ -238,16 +238,17 @@ actor:
     model_path: "thomas0829/folding_towel_pi05"
     model_type: "openpi"
     add_value_head: True
-    num_action_chunks: 10
+    num_action_chunks: 30
     action_dim: 14   # YAM bimanual: 2 × 7 DOF; sets openpi.action_env_dim via interpolation
-    num_steps: 4
+    num_steps: 10
     openpi:
       value_after_vlm: True
       value_vlm_mode: mean_token
-      config_name: "pi05_libero"
-      num_images_in_input: 1
-      noise_method: "flow_noise"
-      action_horizon: 10
+      config_name: "pi05_yam_follower"
+      num_images_in_input: 3
+      discrete_state_input: True
+      noise_method: "flow_sde"
+      action_horizon: 30
       noise_params: [0.16, 0.12, 200]
       joint_logprob: True
 

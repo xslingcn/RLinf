@@ -38,68 +38,34 @@ Generate auth key. Use a **reusable** key if running multiple jobs.
 
 ## End-to-End Workflow
 
-### Step 1: Submit the Beaker job
+### Step 1: Start the interactive Beaker session
+
+Start a Beaker interactive session that brings up Tailscale, installs
+dependencies, starts the Ray head node, and leaves you with a shell-ready
+session. Training is not submitted yet.
 
 ```bash
 bash scripts/submit_yam_training.sh \
     --config yam_ppo_openpi \
-    --model-path thomas0829/folding_towel_pi05 \
+    --interactive --allow-dirty
+```
+
+Beaker prints a session ID. Keep it for Step 4, where you will attach and start
+training manually. Pass `--workspace <beaker-workspace>` if you want to submit
+outside the default workspace. This keeps server startup and training startup
+decoupled.
+
+If you have access to non-interactive Beaker jobs, you can also start an idle
+cluster instead:
+
+```bash
+bash scripts/submit_yam_beaker_cluster.sh \
+    --config yam_ppo_openpi \
     --allow-dirty
 ```
 
-Pass `--workspace <beaker-workspace>` if you want to submit outside the default
-`ai2/molmo-act` workspace.
-
-> **Interactive mode (optional):** To get a shell inside the container and drive
-> training manually, pass `--interactive`. This creates a `beaker session` instead
-> of a gantry job, runs the same Tailscale/install/Ray-head startup path as the
-> idle-cluster workflow, then leaves you in an interactive shell you can attach to:
->
-> ```bash
-> bash scripts/submit_yam_training.sh \
->     --config yam_ppo_openpi \
->     --interactive --allow-dirty
-> # Beaker prints a session ID; then from the cluster:
-> beaker session attach <session-id>
-> ```
->
-> This path requires a default local SSH key such as `~/.ssh/id_ed25519`,
-> because `beaker session create --remote` attaches via SSH.
-
-> **Idle cluster mode (recommended for debugging):** Instead of submitting a job
-> that runs training immediately, you can submit a job that starts Ray and idles.
-> You then SSH into the container at any time and run (or re-run) the training
-> script manually. This is better for iterative debugging because the cluster
-> stays up between training attempts — no need to re-submit when a run fails or
-> you want to tweak arguments.
->
-> ```bash
-> # 1. Submit the idle cluster job (starts Ray head, installs deps, then waits)
-> bash scripts/submit_yam_beaker_cluster.sh \
->     --config yam_ppo_openpi \
->     --priority high \
->     --cluster ai2/jupiter \
->     --workspace ai2/molmoact-ablations \
->     --allow-dirty
->
-> # 2. Watch Beaker logs for the Tailscale IP (same as Step 2 below)
->
-> # 3. SSH into the container and run training manually
-> ssh shiruic@beaker-0  # or ssh shiruic@<tailscale-ip>
-> cd /weka/oe-training-default/shiruic/RLinf
-> source .venv/bin/activate
-> python examples/embodiment/train_embodied_agent_staged.py \
->     --config-name yam_ppo_openpi \
->     actor.model.model_path=thomas0829/folding_towel_pi05 \
->     rollout.model.model_path=thomas0829/folding_towel_pi05 \
->     'env.train.task_description=pick and place' \
->     'env.eval.task_description=pick and place'
-> ```
->
-> The robot server + SSH tunnel workflow (Steps 2–3 below) is the same — the
-> container still uses `RemoteEnv` over `localhost:50051`. The only difference
-> is that you drive the training command yourself instead of the job running it
-> automatically.
+That path starts Ray and waits without creating an interactive Beaker session.
+In that case, use direct SSH in Step 4 instead of `beaker session attach`.
 
 ### Step 2: Get the container's Tailscale IP
 
@@ -132,7 +98,41 @@ need to restart the robot server between Beaker job submissions.
 > **Note:** `autossh` must be installed on the desktop. The script prints
 > install instructions if it is missing.
 
-### Step 4: Training runs
+### Step 4: Attach and start training manually
+
+Once the interactive session is up and the robot server tunnel is running,
+attach to the Beaker session and launch training manually:
+
+```bash
+beaker session attach <session-id>
+cd /weka/oe-training-default/shiruic/RLinf
+source .venv/bin/activate
+python examples/embodiment/train_embodied_agent_staged.py \
+    --config-name yam_ppo_openpi \
+    actor.model.model_path=thomas0829/folding_towel_pi05 \
+    rollout.model.model_path=thomas0829/folding_towel_pi05 \
+    'env.train.task_description=pick and place' \
+    'env.eval.task_description=pick and place'
+```
+
+If the run fails or you want to tweak Hydra overrides, re-run the training
+command from the same Beaker session. You do not need to create a new session
+unless the session itself exits.
+
+If you started the idle cluster with `submit_yam_beaker_cluster.sh` instead,
+SSH into the container and run the same command there:
+
+```bash
+ssh shiruic@beaker-0  # or ssh shiruic@<tailscale-ip>
+cd /weka/oe-training-default/shiruic/RLinf
+source .venv/bin/activate
+python examples/embodiment/train_embodied_agent_staged.py \
+    --config-name yam_ppo_openpi \
+    actor.model.model_path=thomas0829/folding_towel_pi05 \
+    rollout.model.model_path=thomas0829/folding_towel_pi05 \
+    'env.train.task_description=pick and place' \
+    'env.eval.task_description=pick and place'
+```
 
 The `RemoteEnv` inside the container connects to `localhost:50051` (routed
 through the SSH tunnel to the desktop's `RobotServer`). Actor runs on GPU 0,
@@ -158,13 +158,13 @@ VLMPlanner (GPU 2) ◄── frames + instruction ── EnvWorker ────�
 
 ## Supported Configs
 
-| Config | Reward | Subtask Planning | Beaker Script |
+| Config | Reward | Subtask Planning | Startup Command |
 |---|---|---|---|
-| `yam_ppo_openpi` | TOPReward (dense, VLM-based) | no (`subtask_interval: 0`) | `submit_yam_training.sh` |
-| `yam_ppo_openpi_topreward` | TOPReward (dense, VLM-based) | yes (`subtask_interval: 3`) | `submit_yam_training.sh` |
+| `yam_ppo_openpi` | TOPReward (dense, VLM-based) | no (`subtask_interval: 0`) | `submit_yam_training.sh --interactive` or `submit_yam_beaker_cluster.sh` |
+| `yam_ppo_openpi_topreward` | TOPReward (dense, VLM-based) | yes (`subtask_interval: 3`) | `submit_yam_training.sh --interactive` or `submit_yam_beaker_cluster.sh` |
 
-Both configs also work with `submit_yam_beaker_cluster.sh` (idle cluster mode) — the
-script auto-detects the GPU count from the config name.
+Both configs use the same decoupled startup flow. Both startup scripts
+auto-detect the GPU count from the config name.
 
 ## Next Steps
 
@@ -172,5 +172,7 @@ script auto-detects the GPU count from the config name.
   setup, SSH tunnel mechanics, CAN bus, scripts reference, and troubleshooting
 - [Training architecture](training_architecture.md) — data flow, tensor shapes,
   PPO/GAE internals, Hydra config reference, and implementation notes
-- [YAM PPO + TOPReward config guide](yam_ppo_openpi.md)
+- [YAM PPO + TOPReward config guide](yam_ppo_openpi.md) — includes a Beaker
+  simulated-robot-input validation workflow
 - [YAM PPO + TOPReward + subtask planning guide](yam_ppo_openpi_topreward.md)
+  — includes the staged Beaker simulated-robot-input validation workflow

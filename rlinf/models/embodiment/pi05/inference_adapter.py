@@ -140,7 +140,7 @@ def _pad_vector(vector: torch.Tensor, new_dim: int) -> torch.Tensor:
 def _clone_env_obs(env_obs: dict[str, Any]) -> dict[str, Any]:
     cloned: dict[str, Any] = {}
     for key, value in env_obs.items():
-        if key == "task_descriptions":
+        if key == "task_descriptions" or value is None:
             continue
         if torch.is_tensor(value):
             cloned[key] = value.detach().clone()
@@ -152,6 +152,14 @@ def _clone_env_obs(env_obs: dict[str, Any]) -> dict[str, Any]:
         else:
             cloned[key] = value
     return cloned
+
+
+def _assert_no_none_forward_inputs(forward_inputs: dict[str, Any]) -> None:
+    none_keys = [key for key, value in forward_inputs.items() if value is None]
+    if none_keys:
+        raise ValueError(
+            f"PI05 forward_inputs must not contain None values. Found keys: {none_keys}"
+        )
 
 
 class PI05PolicyAdapter(torch.nn.Module, BasePolicy):
@@ -178,6 +186,11 @@ class PI05PolicyAdapter(torch.nn.Module, BasePolicy):
         super().__init__()
         self.checkpoint_dir = checkpoint_dir
         self.config = _build_config(checkpoint_dir)
+        # RLinf trains the PI05 policy under FSDP, which requires each wrapped
+        # module to have a uniform parameter dtype when flattening parameters.
+        # The checkpoint config may request mixed bf16/fp32 weights, so force
+        # the runtime model construction to use full fp32 here.
+        self.config.dtype = "float32"
         self.runtime_action_chunk = action_chunk or self.config.n_action_steps
         self.requested_action_horizon = action_horizon or self.config.chunk_size
         self.runtime_action_horizon = self.config.chunk_size
@@ -230,6 +243,12 @@ class PI05PolicyAdapter(torch.nn.Module, BasePolicy):
                 noise_logvar_range=self.noise_logvar_range,
                 noise_scheduler_type="learn",
             )
+
+    def freeze_vlm(self) -> None:
+        """Freeze the PaliGemma trunk while keeping the expert/value heads trainable."""
+        self.model.paligemma_with_expert.paligemma.eval()
+        for param in self.model.paligemma_with_expert.paligemma.parameters():
+            param.requires_grad = False
 
     def _load_weights(self) -> None:
         state_dict = load_file(
@@ -662,6 +681,7 @@ class PI05PolicyAdapter(torch.nn.Module, BasePolicy):
             "tokenized_prompt_mask": masks.detach(),
         }
         forward_inputs.update(_clone_env_obs(env_obs))
+        _assert_no_none_forward_inputs(forward_inputs)
         result = {
             "prev_logprobs": prev_logprobs.to(dtype=torch.float32).detach().cpu(),
             "prev_values": prev_values.to(dtype=torch.float32).detach().cpu(),
@@ -725,6 +745,7 @@ def get_model(cfg, torch_dtype=None):
     safe_get_logprob = getattr(openpi_cfg, "safe_get_logprob", False)
     value_after_vlm = getattr(openpi_cfg, "value_after_vlm", False)
     value_vlm_mode = getattr(openpi_cfg, "value_vlm_mode", "mean_token")
+    train_expert_only = getattr(openpi_cfg, "train_expert_only", False)
     model = PI05PolicyAdapter(
         checkpoint_dir,
         action_chunk=action_chunk,
@@ -741,6 +762,8 @@ def get_model(cfg, torch_dtype=None):
         value_after_vlm=value_after_vlm,
         value_vlm_mode=value_vlm_mode,
     )
+    if train_expert_only:
+        model.freeze_vlm()
     return model
 
 

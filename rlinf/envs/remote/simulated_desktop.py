@@ -36,6 +36,7 @@ class SimulatedDesktopServerSpec:
     env_config_path: str
     dummy: bool
     startup_timeout: float
+    max_message_size: int
 
 
 def parse_host_port(server_url: str) -> tuple[str, int]:
@@ -118,6 +119,9 @@ def build_simulated_desktop_server_spec(
         env_config_path=env_config_path,
         dummy=bool(sim_cfg.get("dummy", True)),
         startup_timeout=float(sim_cfg.get("startup_timeout", 30.0)),
+        max_message_size=int(
+            active_remote_env_cfgs[0][1].get("grpc_max_message_size", 16 * 1024 * 1024)
+        ),
     )
 
 
@@ -172,6 +176,8 @@ def launch_simulated_desktop_server(
         spec.env_config_path,
         "--port",
         str(spec.port),
+        "--max-message-size",
+        str(spec.max_message_size),
     ]
     if spec.dummy:
         cmd.append("--dummy")

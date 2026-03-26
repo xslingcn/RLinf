@@ -163,6 +163,64 @@ Notes:
 - This mode is for dummy input simulation only.
 - For real hardware, keep using `start_robot_server.sh` on the desktop.
 
+## Beaker End-to-End Validation With Simulated Robot Input
+
+Use this when you want to verify the full YAM pipeline on Beaker without real
+hardware or a desktop SSH tunnel. This path keeps the normal
+`RemoteEnv -> gRPC -> RobotServer` flow, but the staged training script starts
+the dummy `RobotServer` inside the Beaker session.
+
+### Step 1: Start an interactive Beaker session
+
+```bash
+bash scripts/submit_yam_training.sh \
+    --config yam_ppo_openpi \
+    --interactive --allow-dirty
+```
+
+Attach after Beaker prints the session ID:
+
+```bash
+beaker session attach <session-id>
+cd /weka/oe-training-default/shiruic/RLinf
+source .venv/bin/activate
+```
+
+### Step 2: Run staged training with simulated desktop mode enabled
+
+```bash
+python examples/embodiment/train_embodied_agent_staged.py \
+    --config-path examples/embodiment/config \
+    --config-name yam_ppo_openpi \
+    env.remote_desktop_simulation.enabled=true \
+    env.remote_desktop_simulation.dummy=true \
+    env.train.remote_server_url=localhost:50051 \
+    env.eval.remote_server_url=localhost:50051 \
+    actor.model.model_path=thomas0829/folding_towel_pi05 \
+    rollout.model.model_path=thomas0829/folding_towel_pi05
+```
+
+This uses the same 3-GPU staged layout as the normal Beaker run:
+
+- GPU 0: actor
+- GPU 1: rollout
+- GPU 2: VLM planner / TOPReward
+
+### What to look for
+
+The run is wired correctly if you see all of the following:
+
+- a startup log from `train_embodied_agent_staged.py` saying it is starting a
+  simulated `RobotServer` on `localhost:50051`
+- actor, rollout, env, and `VLMPlannerWorker` all start successfully
+- `EnvWorker` logs `TOPReward: score=..., delta=...`
+- training proceeds past rollout collection into advantage computation and at
+  least one policy update
+
+If this works, the following path has been validated inside Beaker:
+
+`RemoteEnv -> local dummy RobotServer -> env output -> TOPReward injection -> GAE -> PPO update`
+
 ## Related Docs
 
 - [quickstart](quickstart.md)
