@@ -31,6 +31,7 @@
 #   --gripper-close VAL   Optional gripper close limit for follower startup
 #   --allow-plain-ssh     Allow fallback to plain ssh if autossh is unavailable
 #   --kill-video-holders  Kill stale processes holding /dev/video* before startup
+#   --no-kill-video-holders  Do not kill stale /dev/video* holders before startup
 #   --no-tunnel           Start RobotServer only, no SSH tunnel
 #   --dummy               Run without real hardware (zero observations)
 #   --verbose             Show robot state before serving and log every chunk step
@@ -47,7 +48,7 @@ USE_FOLLOWER_SERVERS=false
 GRIPPER_OPEN=""
 GRIPPER_CLOSE=""
 ALLOW_PLAIN_SSH=false
-KILL_VIDEO_HOLDERS=false
+KILL_VIDEO_HOLDERS=true
 NO_TUNNEL=false
 DUMMY=false
 VERBOSE=false
@@ -73,7 +74,8 @@ Options:
   --gripper-open VAL    Optional gripper open limit for follower startup
   --gripper-close VAL   Optional gripper close limit for follower startup
   --allow-plain-ssh     Allow fallback to plain ssh if autossh is unavailable
-  --kill-video-holders  Kill stale processes holding /dev/video* before startup
+  --kill-video-holders  Kill stale processes holding /dev/video* before startup (default: on)
+  --no-kill-video-holders  Do not kill stale /dev/video* holders before startup
   --no-tunnel           Start RobotServer only, without SSH tunnel
   --dummy               Run without real hardware (zero observations)
   --verbose             Show robot state before serving and log every chunk step
@@ -115,6 +117,7 @@ while [[ $# -gt 0 ]]; do
         --gripper-close) GRIPPER_CLOSE="$2"; shift 2 ;;
         --allow-plain-ssh) ALLOW_PLAIN_SSH=true; shift ;;
         --kill-video-holders) KILL_VIDEO_HOLDERS=true; shift ;;
+        --no-kill-video-holders) KILL_VIDEO_HOLDERS=false; shift ;;
         --no-tunnel)    NO_TUNNEL=true; shift ;;
         --dummy)        DUMMY=true; shift ;;
         --verbose)      VERBOSE=true; shift ;;

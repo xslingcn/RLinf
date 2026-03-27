@@ -172,7 +172,8 @@ class YAMEnv(gym.Env):
         else:
             self._setup_dummy_cameras()
         self._resolve_camera_roles(self._camera_names)
-        self._capture_reset_joint_positions()
+        if not self._skip_home_on_initial_reset:
+            self._capture_reset_joint_positions()
 
         # Gym spaces
         obs_space = {
