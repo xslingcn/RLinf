@@ -129,6 +129,10 @@ algorithm:
     min_length: 1
 
 env:
+  # Single knob for how often the robot should return to startup home and rest.
+  # validate_cfg converts this into train/eval step counts and aligns to the
+  # action chunk size automatically.
+  return_home_minutes: 2
   group_name: "EnvGroup"
   # Optional local simulation of the robot desktop input path.
   # When enabled, train_embodied_agent_staged.py starts a local dummy
@@ -145,9 +149,15 @@ env:
 
   train:
     total_num_envs: 1
-    max_episode_steps: 100
-    max_steps_per_rollout_epoch: 60
+    # Derived automatically from env.return_home_minutes.
+    max_episode_steps: 24000
+    max_steps_per_rollout_epoch: 24000
     control_rate_hz: 10.0
+    # Do not return home when a new rollout epoch starts.
+    reset_on_rollout_epoch: False
+    # Instead, return home after the rollout epoch finishes (about
+    # env.return_home_minutes later) so the robot can rest.
+    reset_on_rollout_epoch_end: True
 
     task_description: "Fold the towel."
 
@@ -167,8 +177,9 @@ env:
 
   eval:
     total_num_envs: 1
-    max_episode_steps: 100
-    max_steps_per_rollout_epoch: 60
+    # Derived automatically from env.return_home_minutes.
+    max_episode_steps: 24000
+    max_steps_per_rollout_epoch: 24000
     control_rate_hz: 10.0
     task_description: "Fold the towel."
 
@@ -212,7 +223,7 @@ actor:
   group_name: "ActorGroup"
   training_backend: "fsdp"
 
-  # rollout_size = n_chunk_steps * total_num_envs * rollout_epoch = 2 * 1 * 1 = 2
+  # rollout_size = n_chunk_steps * total_num_envs * rollout_epoch = 800 * 1 * 1 = 800
   # global_batch_size must divide rollout_size; micro_batch_size must divide global_batch_size.
   micro_batch_size: 2
   global_batch_size: 2
