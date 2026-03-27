@@ -58,7 +58,6 @@ import threading
 
 import grpc
 import hydra
-import ray
 import torch.multiprocessing as mp
 from omegaconf.omegaconf import OmegaConf
 
@@ -183,12 +182,16 @@ def _shutdown_worker_group_fast(worker_group) -> None:
         pass
 
 
-def _shutdown_vlm_actor_fast(vlm_actor) -> None:
-    """Terminate the standalone VLM actor immediately."""
-    if vlm_actor is None:
-        return
+def _suppress_worker_failure_signal() -> None:
+    """Ignore SIGUSR1 during intentional fast shutdown.
+
+    WorkerGroup wait threads send SIGUSR1 when a Ray worker disappears while a
+    background ``ray.get`` is still pending. That is useful for real failures,
+    but during an intentional Ctrl+C / remote-disconnect fast shutdown it turns
+    an expected teardown into a noisy "worker execution failure" exit path.
+    """
     try:
-        ray.kill(vlm_actor)
+        signal.signal(signal.SIGUSR1, signal.SIG_IGN)
     except Exception:
         pass
 
@@ -423,10 +426,10 @@ def main(cfg) -> None:
         fast_shutdown = fast_shutdown or _REMOTE_DISCONNECT_EVENT.is_set()
         _request_remote_safe_recovery(cfg)
         if workers_initialized and fast_shutdown:
+            _suppress_worker_failure_signal()
             _shutdown_worker_group_fast(env_group)
             _shutdown_worker_group_fast(rollout_group)
             _shutdown_worker_group_fast(actor_group)
-            _shutdown_vlm_actor_fast(vlm_actor)
         else:
             if workers_initialized and env_group is not None:
                 try:
@@ -443,7 +446,6 @@ def main(cfg) -> None:
                     actor_group._close()
                 except Exception:
                     pass
-            _shutdown_vlm_actor_fast(vlm_actor)
         stop_process(simulated_desktop_server)
 
 
