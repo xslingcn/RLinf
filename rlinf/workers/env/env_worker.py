@@ -849,6 +849,36 @@ class EnvWorker(Worker):
 
         return env_outputs
 
+    def _get_zero_dones(self) -> torch.Tensor:
+        return (
+            torch.zeros((self.train_num_envs_per_stage,), dtype=bool)
+            .unsqueeze(1)
+            .repeat(1, self.cfg.actor.model.num_action_chunks)
+        )
+
+    def _reset_envs_for_next_rollout_epoch(self) -> list[EnvOutput]:
+        env_outputs: list[EnvOutput] = []
+        dones = self._get_zero_dones()
+        terminations = dones.clone()
+        truncations = dones.clone()
+        for stage_id in range(self.stage_num):
+            self.env_list[stage_id].is_start = True
+            extracted_obs, infos = self.env_list[stage_id].reset()
+            env_outputs.append(
+                EnvOutput(
+                    obs=extracted_obs,
+                    dones=dones,
+                    terminations=terminations,
+                    truncations=truncations,
+                    final_obs=infos["final_observation"]
+                    if "final_observation" in infos
+                    else None,
+                    intervene_actions=None,
+                    intervene_flags=None,
+                )
+            )
+        return env_outputs
+
     def record_env_metrics(
         self, env_metrics: dict[str, list], env_info: dict[str, Any], epoch: int
     ):
