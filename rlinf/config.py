@@ -124,13 +124,7 @@ def openai_gelu(x):
     return gelu_impl(x)
 
 
-try:
-    jit_fuser = torch.compile
-except Exception:
-    jit_fuser = torch.jit.script
-
-
-@jit_fuser
+@torch.jit.script
 def squared_relu(x):
     return torch.pow(torch.nn.functional.relu(x), 2)
 
