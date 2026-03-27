@@ -177,6 +177,10 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         # Track last client RPC time for disconnect detection.
         self._last_rpc_time: float = time.monotonic()
         self._client_connected: bool = False
+        # Protects all env operations so that safe_recover() and gRPC
+        # handlers never touch the robot concurrently (the portal clients'
+        # use_future flag is not thread-safe).
+        self._env_lock = threading.Lock()
 
     def _touch(self) -> None:
         """Record that a client RPC was received."""
@@ -248,8 +252,9 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
 
     def Reset(self, request, context):
         self._touch()
-        seed = request.seed if request.HasField("seed") else None
-        obs, _ = self._env.reset(seed=seed)
+        with self._env_lock:
+            seed = request.seed if request.HasField("seed") else None
+            obs, _ = self._env.reset(seed=seed)
         return _obs_to_proto(
             obs,
             self._env._img_h,
@@ -277,9 +282,14 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         if not self._first_chunk_approved:
             self._wait_for_first_chunk_approval(actions)
 
-        obs_list, chunk_rewards, chunk_terminations, chunk_truncations, infos_list = (
-            self._env.chunk_step(actions)
-        )
+        with self._env_lock:
+            (
+                obs_list,
+                chunk_rewards,
+                chunk_terminations,
+                chunk_truncations,
+                infos_list,
+            ) = self._env.chunk_step(actions)
 
         step_results = []
         chunk_size = request.chunk_size
@@ -319,7 +329,8 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
 
     def EnterZeroTorqueMode(self, request, context):
         self._touch()
-        self._env.enter_zero_torque_mode()
+        with self._env_lock:
+            self._env.enter_zero_torque_mode()
         return robot_env_pb2.Empty()
 
     def Close(self, request, context):
@@ -329,31 +340,45 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
             self._request_shutdown(return_home=True)
         return robot_env_pb2.Empty()
 
-    def safe_recover(self) -> None:
+    def safe_recover(self, idle_timeout_s: float) -> None:
         """Return arms to home, enter zero-torque, and prepare for reconnection.
 
         Called by the watchdog when the client appears to have disconnected.
+        Acquires ``_env_lock`` to avoid racing with in-flight gRPC handlers,
+        then re-checks the idle time — if a new RPC arrived while waiting for
+        the lock the recovery is skipped.
         """
-        logger.info("[RobotServer] Client disconnected — starting safe recovery.")
-        try:
-            self._env.return_to_home()
-            logger.info("[RobotServer] Arms returned to home.")
-        except Exception as exc:
-            logger.error(f"[RobotServer] Failed to return home: {exc}")
+        with self._env_lock:
+            # Re-check: a new RPC may have arrived while we waited for the lock.
+            idle_s = time.monotonic() - self._last_rpc_time
+            if idle_s < idle_timeout_s:
+                logger.info(
+                    "[RobotServer] Client activity detected after lock acquired "
+                    "(idle=%.1fs) — skipping safe recovery.",
+                    idle_s,
+                )
+                return
 
-        try:
-            self._env.enter_zero_torque_mode()
-            logger.info("[RobotServer] Motors in zero-torque mode.")
-        except Exception as exc:
-            logger.error(f"[RobotServer] Failed to enter zero-torque: {exc}")
+            logger.info("[RobotServer] Client disconnected — starting safe recovery.")
+            try:
+                self._env.return_to_home()
+                logger.info("[RobotServer] Arms returned to home.")
+            except Exception as exc:
+                logger.error(f"[RobotServer] Failed to return home: {exc}")
 
-        self._env.prepare_for_reconnection()
-        self._client_connected = False
-        self._first_chunk_approved = not self._verbose
-        logger.info(
-            "[RobotServer] Safe recovery complete. "
-            "Server is still listening — waiting for new client."
-        )
+            try:
+                self._env.enter_zero_torque_mode()
+                logger.info("[RobotServer] Motors in zero-torque mode.")
+            except Exception as exc:
+                logger.error(f"[RobotServer] Failed to enter zero-torque: {exc}")
+
+            self._env.prepare_for_reconnection()
+            self._client_connected = False
+            self._first_chunk_approved = not self._verbose
+            logger.info(
+                "[RobotServer] Safe recovery complete. "
+                "Server is still listening — waiting for new client."
+            )
 
 
 _DEFAULT_CLIENT_IDLE_TIMEOUT_S = 30.0
@@ -446,7 +471,7 @@ def serve(
                     idle_s,
                     client_idle_timeout_s,
                 )
-                servicer.safe_recover()
+                servicer.safe_recover(idle_timeout_s=client_idle_timeout_s)
 
     watchdog_thread = threading.Thread(
         target=_watchdog, name="robot-server-watchdog", daemon=True
