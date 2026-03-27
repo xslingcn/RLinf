@@ -75,3 +75,19 @@ class YAMFollowerClient(YamRealtimeClient):
 
     def get_robot_type(self) -> RobotType:
         return RobotType.ARM
+
+    def close(self) -> None:
+        """Close the underlying portal client without reconnect noise."""
+        client = getattr(self, "_client", None)
+        if client is None:
+            return
+        try:
+            client.socket.options.autoconn = False
+            client.socket.options.logging = False
+        except Exception:
+            pass
+        try:
+            client.close(timeout=0.2)
+        except Exception:
+            pass
+        self._client = None

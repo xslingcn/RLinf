@@ -126,3 +126,7 @@ class RobotEnv(dm_env.Environment):
         if self._camera_dict is not None:
             for camera_name, client in self._camera_dict.items():
                 client.close()  # type: ignore
+        for robot_name, client in self._robot_dict.items():
+            close = getattr(client, "close", None)
+            if callable(close):
+                close()  # type: ignore

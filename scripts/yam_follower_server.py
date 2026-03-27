@@ -98,6 +98,9 @@ def main() -> None:
         closing = True
         if server.running:
             server.close(timeout=1.0)
+        close_robot = getattr(robot, "close", None)
+        if callable(close_robot):
+            close_robot()
 
     def _shutdown(_signum: int, _frame: object | None) -> None:
         _close_server()

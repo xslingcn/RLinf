@@ -206,7 +206,7 @@ if [ -n "$TRAIN_CONFIG" ] || [ -n "$RETURN_HOME_MINUTES_OVERRIDE" ] || [ -n "$CO
 fi
 
 CLEANING_UP=false
-SERVER_SHUTDOWN_WAIT_S=30
+SERVER_SHUTDOWN_WAIT_S=8
 
 video_devices_exist() {
     compgen -G "/dev/video*" >/dev/null 2>&1

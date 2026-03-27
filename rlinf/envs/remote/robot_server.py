@@ -689,12 +689,7 @@ def serve(
     except Exception as exc:
         logger.error(f"[RobotServer] Failed to return home: {exc}")
 
-    logger.info("[RobotServer] Entering zero-torque mode...")
-    try:
-        env.enter_zero_torque_mode()
-        logger.info("[RobotServer] Zero-torque mode.")
-    except Exception as exc:
-        logger.error(f"[RobotServer] Failed to enter zero-torque: {exc}")
+    logger.info("[RobotServer] Local shutdown requested — skipping zero-torque mode.")
 
     try:
         env.close(return_home=False)
