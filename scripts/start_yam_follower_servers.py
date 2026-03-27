@@ -203,10 +203,10 @@ def terminate_processes(processes: list[subprocess.Popen[bytes]]) -> None:
             continue
         try:
             process.terminate()
-            process.wait(timeout=5)
+            process.wait(timeout=1)
         except subprocess.TimeoutExpired:
             process.kill()
-            process.wait(timeout=5)
+            process.wait(timeout=1)
 
 
 def main() -> None:

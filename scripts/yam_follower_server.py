@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import argparse
+import signal
 
 import portal
 from i2rt.robots.get_robot import get_yam_robot
@@ -87,7 +88,32 @@ def main() -> None:
     server.bind("command_joint_state", robot.command_joint_state)
     server.bind("get_observations", robot.get_observations)
     server.bind("zero_torque_mode", robot.zero_torque_mode)
-    server.start()
+
+    closing = False
+
+    def _close_server() -> None:
+        nonlocal closing
+        if closing:
+            return
+        closing = True
+        if server.running:
+            server.close(timeout=1.0)
+        close_robot = getattr(robot, "close", None)
+        if callable(close_robot):
+            close_robot()
+
+    def _shutdown(_signum: int, _frame: object | None) -> None:
+        _close_server()
+
+    signal.signal(signal.SIGINT, _shutdown)
+    signal.signal(signal.SIGTERM, _shutdown)
+
+    try:
+        server.start()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        _close_server()
 
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ SSH tunnel (Tailscale).
 import argparse
 import os
 import signal
+import sys
 import threading
 import time
 from concurrent import futures
@@ -174,7 +175,119 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         self._first_chunk_approved = not verbose
         self._request_shutdown = request_shutdown
 
+        # Track last client RPC time for disconnect detection.
+        self._last_rpc_time: float = time.monotonic()
+        self._client_connected: bool = False
+        self._chunk_count: int = 0
+        self._episode_cooldown_s: float = float(
+            getattr(self._env, "_episode_cooldown_s", 0.0)
+        )
+        self._cooldown_deadline: float | None = None
+        self._restart_required: bool = False
+        # Protects all env operations so that safe_recover() and gRPC
+        # handlers never touch the robot concurrently (the portal clients'
+        # use_future flag is not thread-safe).
+        self._env_lock = threading.Lock()
+
+    def _touch(self) -> None:
+        """Record that a client RPC was received."""
+        self._last_rpc_time = time.monotonic()
+        self._client_connected = True
+
+    def _reset_client_session_state(self) -> None:
+        """Reset per-client counters after a forced stop/recovery."""
+        self._client_connected = False
+        self._chunk_count = 0
+        self._first_chunk_approved = not self._verbose
+
+    def _get_current_raw_obs_locked(self) -> dict:
+        """Return the latest raw observation without commanding the robot."""
+        if getattr(self._env, "_is_dummy", False):
+            return self._env._dummy_obs()
+        robot_env = getattr(self._env, "_robot_env", None)
+        if robot_env is None:
+            return self._env._dummy_obs()
+        return robot_env.get_obs()
+
+    def _build_idle_chunk_response(
+        self,
+        obs: dict,
+        chunk_size: int,
+        *,
+        truncated: bool,
+    ) -> robot_env_pb2.ChunkStepResponse:
+        """Return a no-op chunk response that surfaces the current observation."""
+        step_results = []
+        for step_idx in range(chunk_size):
+            obs_proto = _obs_to_proto(
+                obs,
+                self._env._img_h,
+                self._env._img_w,
+                compress=self._compress,
+                jpeg_quality=self._jpeg_quality,
+            )
+            step_results.append(
+                robot_env_pb2.StepResult(
+                    observation=obs_proto,
+                    reward=0.0,
+                    terminated=False,
+                    truncated=bool(truncated and step_idx == chunk_size - 1),
+                )
+            )
+        return robot_env_pb2.ChunkStepResponse(step_results=step_results)
+
+    def _start_restart_flow_locked(
+        self,
+        *,
+        reason: str,
+        enter_zero_torque: bool,
+        cooldown_s: float,
+        prepare_for_reconnection: bool,
+    ) -> None:
+        """Return home and arm the next episode/session restart."""
+        logger.info(reason)
+        try:
+            self._env.return_to_home()
+            logger.info("[RobotServer] Arms returned to home.")
+        except Exception as exc:
+            logger.error(f"[RobotServer] Failed to return home: {exc}")
+
+        if enter_zero_torque:
+            try:
+                self._env.enter_zero_torque_mode()
+                logger.info("[RobotServer] Motors in zero-torque mode.")
+            except Exception as exc:
+                logger.error(f"[RobotServer] Failed to enter zero-torque: {exc}")
+
+        if prepare_for_reconnection:
+            self._env.prepare_for_reconnection()
+        else:
+            self._env.prepare_for_next_episode()
+
+        self._restart_required = True
+        self._cooldown_deadline = (
+            time.monotonic() + cooldown_s if cooldown_s > 0 else None
+        )
+        self._reset_client_session_state()
+
+    def _finish_restart_if_ready_locked(self) -> dict | None:
+        """Reset from home once cooldown has elapsed and return the fresh obs."""
+        if not self._restart_required:
+            return None
+
+        if self._cooldown_deadline is not None:
+            remaining_s = self._cooldown_deadline - time.monotonic()
+            if remaining_s > 0:
+                return None
+
+        obs, _ = self._env.reset()
+        self._restart_required = False
+        self._cooldown_deadline = None
+        logger.info("[RobotServer] Episode/session restarted from home.")
+        return obs
+
     def GetSpaces(self, request, context):
+        self._touch()
         obs_space = self._env.observation_space
         obs_spaces = obs_space.spaces
         act_space = self._env.action_space
@@ -237,8 +350,15 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         logger.info("[ChunkStep] First chunk approved. Executing...")
 
     def Reset(self, request, context):
-        seed = request.seed if request.HasField("seed") else None
-        obs, _ = self._env.reset(seed=seed)
+        self._touch()
+        with self._env_lock:
+            seed = request.seed if request.HasField("seed") else None
+            if self._restart_required:
+                obs = self._finish_restart_if_ready_locked()
+                if obs is None:
+                    obs = self._env._wrap_obs(self._get_current_raw_obs_locked())
+            else:
+                obs, _ = self._env.reset(seed=seed)
         return _obs_to_proto(
             obs,
             self._env._img_h,
@@ -248,6 +368,7 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         )
 
     def ChunkStep(self, request, context):
+        self._touch()
         actions = np.frombuffer(request.actions, dtype=np.float32).reshape(
             request.num_envs, request.chunk_size, request.action_dim
         )
@@ -262,12 +383,27 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
                     f"action={np.array2string(actions[0, i], precision=4, suppress_small=True)}"
                 )
 
+        with self._env_lock:
+            if self._restart_required:
+                obs = self._finish_restart_if_ready_locked()
+                if obs is None:
+                    obs = self._env._wrap_obs(self._get_current_raw_obs_locked())
+                return self._build_idle_chunk_response(
+                    obs, request.chunk_size, truncated=True
+                )
+
         if not self._first_chunk_approved:
             self._wait_for_first_chunk_approval(actions)
 
-        obs_list, chunk_rewards, chunk_terminations, chunk_truncations, infos_list = (
-            self._env.chunk_step(actions)
-        )
+        with self._env_lock:
+            (
+                obs_list,
+                chunk_rewards,
+                chunk_terminations,
+                chunk_truncations,
+                infos_list,
+            ) = self._env.chunk_step(actions)
+        self._chunk_count += 1
 
         step_results = []
         chunk_size = request.chunk_size
@@ -301,18 +437,93 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         return robot_env_pb2.ChunkStepResponse(step_results=step_results)
 
     def SetTaskDescription(self, request, context):
+        self._touch()
         self._env.task_description = request.task_description
         return robot_env_pb2.Empty()
 
     def EnterZeroTorqueMode(self, request, context):
-        self._env.enter_zero_torque_mode()
+        self._touch()
+        with self._env_lock:
+            self._env.enter_zero_torque_mode()
         return robot_env_pb2.Empty()
 
     def Close(self, request, context):
-        logger.info("[RobotServer] Close RPC received. Scheduling shutdown.")
-        if self._request_shutdown is not None:
-            self._request_shutdown(return_home=True)
+        self._touch()
+        logger.info(
+            "[RobotServer] Close RPC received from remote client. "
+            "Returning home, entering zero-torque, and waiting for a new client."
+        )
+        with self._env_lock:
+            self._start_restart_flow_locked(
+                reason=(
+                    "[RobotServer] Remote client requested session close — "
+                    "starting safe recovery."
+                ),
+                enter_zero_torque=True,
+                cooldown_s=0.0,
+                prepare_for_reconnection=True,
+            )
         return robot_env_pb2.Empty()
+
+    def episode_timeout(self) -> None:
+        """Return arms to home when the episode timer expires.
+
+        Called by the timer thread.  Acquires ``_env_lock`` and re-checks
+        the timer to avoid acting on a stale reading.
+        """
+        with self._env_lock:
+            start = self._env._episode_start_time
+            if start is None:
+                return
+            elapsed = time.monotonic() - start
+            if elapsed < self._env._episode_duration_s:
+                return
+            self._start_restart_flow_locked(
+                reason=(
+                    "[RobotServer] Episode timer expired — returning home and "
+                    "starting the server-side restart countdown."
+                ),
+                enter_zero_torque=False,
+                cooldown_s=self._episode_cooldown_s,
+                prepare_for_reconnection=False,
+            )
+
+    def safe_recover(self, idle_timeout_s: float) -> None:
+        """Return arms to home, enter zero-torque, and prepare for reconnection.
+
+        Called by the watchdog when the client appears to have disconnected.
+        Acquires ``_env_lock`` to avoid racing with in-flight gRPC handlers,
+        then re-checks the idle time — if a new RPC arrived while waiting for
+        the lock the recovery is skipped.
+        """
+        with self._env_lock:
+            # Re-check: a new RPC may have arrived while we waited for the lock.
+            idle_s = time.monotonic() - self._last_rpc_time
+            if idle_s < idle_timeout_s:
+                logger.info(
+                    "[RobotServer] Client activity detected after lock acquired "
+                    "(idle=%.1fs) — skipping safe recovery.",
+                    idle_s,
+                )
+                return
+
+            self._start_restart_flow_locked(
+                reason=(
+                    "[RobotServer] Client disconnected — returning home, "
+                    "entering zero-torque, and waiting for reconnection."
+                ),
+                enter_zero_torque=True,
+                cooldown_s=0.0,
+                prepare_for_reconnection=True,
+            )
+            logger.info(
+                "[RobotServer] Safe recovery complete. "
+                "Server is still listening — waiting for new client."
+            )
+
+
+_DEFAULT_CLIENT_IDLE_TIMEOUT_S = 120.0
+_WATCHDOG_POLL_INTERVAL_S = 5.0
 
 
 def serve(
@@ -322,7 +533,16 @@ def serve(
     dummy: bool = False,
     verbose: bool = False,
 ):
-    """Start the gRPC server with a YAMEnv instance."""
+    """Start the gRPC server with a YAMEnv instance.
+
+    The server stays alive across client disconnects.  A watchdog thread
+    monitors client activity; when no RPC has been received for
+    ``client_idle_timeout_s`` seconds and a client was previously connected,
+    the watchdog triggers safe recovery (return-to-home → zero-torque) and
+    then waits for the next client.
+
+    A local ``Ctrl+C`` (SIGINT/SIGTERM) shuts the server down for real.
+    """
     from rlinf.envs.yam.yam_env import YAMEnv
 
     cfg = OmegaConf.load(cfg_path)
@@ -331,6 +551,9 @@ def serve(
 
     compress = bool(cfg.get("compress_images", True))
     jpeg_quality = int(cfg.get("jpeg_quality", _JPEG_QUALITY))
+    client_idle_timeout_s = float(
+        cfg.get("client_idle_timeout_s", _DEFAULT_CLIENT_IDLE_TIMEOUT_S)
+    )
 
     logger.info(f"[RobotServer] Creating YAMEnv from config: {cfg_path}")
     env = YAMEnv(
@@ -349,14 +572,9 @@ def serve(
                 f.write("ready\n")
 
     stop_event = threading.Event()
-    shutdown_lock = threading.Lock()
-    shutdown_state = {"return_home": False}
 
     def _request_shutdown(return_home: bool) -> None:
-        with shutdown_lock:
-            if return_home:
-                shutdown_state["return_home"] = True
-            stop_event.set()
+        stop_event.set()
 
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=4),
@@ -378,18 +596,103 @@ def serve(
     server.start()
     logger.info(f"[RobotServer] Serving on port {port}")
 
+    # ---- Watchdog: detect client disconnect and trigger safe recovery ----
+    # Only activates after the first ChunkStep has been processed so that
+    # slow model loading on the Beaker side does not trigger a false alarm.
+    def _watchdog() -> None:
+        while not stop_event.is_set():
+            stop_event.wait(timeout=_WATCHDOG_POLL_INTERVAL_S)
+            if stop_event.is_set():
+                break
+            if not servicer._client_connected or servicer._chunk_count == 0:
+                continue
+            idle_s = time.monotonic() - servicer._last_rpc_time
+            if idle_s >= client_idle_timeout_s:
+                logger.warning(
+                    "[RobotServer] No client RPC for %.0fs "
+                    "(timeout=%.0fs). Assuming client disconnected.",
+                    idle_s,
+                    client_idle_timeout_s,
+                )
+                servicer.safe_recover(idle_timeout_s=client_idle_timeout_s)
+
+    watchdog_thread = threading.Thread(
+        target=_watchdog, name="robot-server-watchdog", daemon=True
+    )
+    watchdog_thread.start()
+
+    # ---- Timer: 1-second countdown display + episode timeout handling ----
+    def _timer_display() -> None:
+        last_line_len = 0
+        while not stop_event.is_set():
+            time.sleep(1.0)
+            if stop_event.is_set():
+                break
+            start = env._episode_start_time
+            cooldown_deadline = servicer._cooldown_deadline
+            if cooldown_deadline is not None:
+                remaining_s = max(0.0, cooldown_deadline - time.monotonic())
+                if remaining_s > 0:
+                    rem_m, rem_s = divmod(int(remaining_s), 60)
+                    line = f"  [Cooldown] {rem_m}:{rem_s:02d} before restart"
+                    sys.stdout.write("\r" + line.ljust(last_line_len))
+                    sys.stdout.flush()
+                    last_line_len = len(line)
+                    continue
+            if start is None:
+                # Clear the timer line when no episode is active.
+                if last_line_len > 0:
+                    sys.stdout.write("\r" + " " * last_line_len + "\r")
+                    sys.stdout.flush()
+                    last_line_len = 0
+                continue
+            elapsed_s = time.monotonic() - start
+            duration_s = env._episode_duration_s
+            remaining_s = max(0.0, duration_s - elapsed_s)
+            if remaining_s <= 0:
+                sys.stdout.write("\r" + " " * last_line_len + "\r")
+                sys.stdout.flush()
+                last_line_len = 0
+                servicer.episode_timeout()
+                continue
+            rem_m, rem_s = divmod(int(remaining_s), 60)
+            tot_m, tot_s = divmod(int(duration_s), 60)
+            line = f"  [Timer] {rem_m}:{rem_s:02d} remaining (of {tot_m}:{tot_s:02d})"
+            sys.stdout.write("\r" + line.ljust(last_line_len))
+            sys.stdout.flush()
+            last_line_len = len(line)
+
+    timer_thread = threading.Thread(
+        target=_timer_display, name="robot-server-timer", daemon=True
+    )
+    timer_thread.start()
+
+    # ---- Signal handler: local Ctrl+C triggers real shutdown ----
     def _shutdown(signum, frame):
-        _request_shutdown(return_home=True)
+        stop_event.set()
 
     signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
 
     stop_event.wait()
 
+    # ---- Shutdown: return home FIRST while portal connections are alive ----
+    sys.stdout.write("\n")  # move past the timer line
+    sys.stdout.flush()
     logger.info("[RobotServer] Shutting down...")
-    server.stop(grace=1)
+    server.stop(grace=2)
+
+    logger.info("[RobotServer] Returning arms to home...")
     try:
-        env.close(return_home=shutdown_state["return_home"])
+        env.return_to_home()
+        logger.info("[RobotServer] Arms at home.")
+    except Exception as exc:
+        logger.error(f"[RobotServer] Failed to return home: {exc}")
+
+    logger.info("[RobotServer] Local shutdown requested — skipping zero-torque mode.")
+
+    try:
+        env.close(return_home=False)
     except Exception:
         pass
 

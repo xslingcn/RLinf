@@ -155,6 +155,28 @@ class YAMEnv(gym.Env):
         self._num_steps = 0
         self._elapsed_steps = np.zeros(self.num_envs, dtype=np.int32)
 
+        # Wall-clock episode timer.  Starts when the first real action is
+        # executed (not on reset) so that inference latency does not eat into
+        # the episode budget.
+        #
+        # Explicit ``episode_duration_s`` in config takes priority.  When
+        # absent, fall back to ``max_episode_steps / control_rate_hz`` — but
+        # if that exceeds 1 hour the timer is effectively disabled (the
+        # training side controls the real return-home cadence).
+        _configured_duration = cfg.get("episode_duration_s", None)
+        if _configured_duration is not None:
+            self._episode_duration_s: float = float(_configured_duration)
+        else:
+            self._episode_duration_s = self._max_episode_steps / self._control_rate_hz
+        cooldown_minutes = cfg.get("episode_cooldown_minutes", None)
+        if cooldown_minutes is not None:
+            self._episode_cooldown_s = max(0.0, float(cooldown_minutes) * 60.0)
+        else:
+            self._episode_cooldown_s = max(
+                0.0, float(cfg.get("episode_cooldown_s", 0.0))
+            )
+        self._episode_start_time: float | None = None
+
         # Metrics (mirrors RealWorldEnv for compatibility)
         self._init_metrics()
 
@@ -294,6 +316,7 @@ class YAMEnv(gym.Env):
         """
         self._num_steps = 0
         self._elapsed_steps[:] = 0
+        self._episode_start_time = None
         self._reset_metrics()
         self._is_start = True
 
@@ -306,13 +329,17 @@ class YAMEnv(gym.Env):
             )
             if should_skip_home:
                 # On the very first reset we only want to adopt the robot's
-                # current pose as the startup home. Do not send any home/reset
-                # motion commands here.
+                # current pose as the startup home.  Do NOT send any motor
+                # commands here — the follower servers start in zero-torque
+                # mode (kp=kd=0) and calling command_joint_pos would abruptly
+                # engage PD control, causing the arms to jerk.  The first
+                # real inference action in step() will naturally transition
+                # the controller.
                 self._capture_reset_joint_positions()
                 raw_obs = self._robot_env.get_obs()
                 self._logger.info(
                     "[YAMEnv] Initial reset captured the current robot pose as "
-                    "startup home without commanding any return-home motion."
+                    "startup home (no motor commands sent)."
                 )
             else:
                 self._move_robots_to_reset_pose()
@@ -544,15 +571,33 @@ class YAMEnv(gym.Env):
             if actions.ndim == 2:
                 actions = actions[0]  # unwrap batch dim
 
+        # Start the wall-clock episode timer on the first real action so
+        # that inference warm-up latency does not consume episode budget.
+        if actions is not None and self._episode_start_time is None:
+            self._episode_start_time = time.monotonic()
+            self._logger.info(
+                "[YAMEnv] Episode timer started (%.1fs budget).",
+                self._episode_duration_s,
+            )
+
         self._elapsed_steps += 1
         self._num_steps += 1
-        truncated = self._elapsed_steps >= self._max_episode_steps
+
+        # Truncation: wall-clock time since first action execution.
+        if self._episode_start_time is not None:
+            elapsed_s = time.monotonic() - self._episode_start_time
+            truncated = np.array([elapsed_s >= self._episode_duration_s], dtype=bool)
+        else:
+            truncated = np.zeros(self.num_envs, dtype=bool)
 
         if self._is_dummy:
             raw_obs = self._dummy_obs()
         else:
-            action_dict = self._format_action(actions)
-            raw_obs = self._robot_env.step(action_dict)
+            if np.any(truncated):
+                raw_obs = self._robot_env.get_obs()
+            else:
+                action_dict = self._format_action(actions)
+                raw_obs = self._robot_env.step(action_dict)
 
         reward = np.zeros(self.num_envs, dtype=np.float32)
         terminated = np.zeros(self.num_envs, dtype=bool)
@@ -569,6 +614,7 @@ class YAMEnv(gym.Env):
             self._reset_metrics()
             self._num_steps = 0
             self._elapsed_steps[:] = 0
+            self._episode_start_time = None
 
         return obs, reward, terminated, truncated, infos
 
@@ -607,6 +653,15 @@ class YAMEnv(gym.Env):
             raw_chunk_rewards.append(step_reward)
             raw_chunk_terminations.append(terminations)
             raw_chunk_truncations.append(truncations)
+            if np.any(terminations) or np.any(truncations):
+                remaining_steps = chunk_size - i - 1
+                for _ in range(remaining_steps):
+                    obs_list.append(obs)
+                    infos_list.append(infos)
+                    raw_chunk_rewards.append(np.zeros_like(step_reward))
+                    raw_chunk_terminations.append(terminations.copy())
+                    raw_chunk_truncations.append(truncations.copy())
+                break
 
         chunk_rewards = torch.stack(
             [
@@ -717,6 +772,32 @@ class YAMEnv(gym.Env):
 
         self._logger.info(
             f"[YAMEnv] Entered zero-torque mode for robots: {list(robot_names)}."
+        )
+
+    def prepare_for_reconnection(self) -> None:
+        """Reset internal state so the next client gets a fresh session.
+
+        Called by the robot server after a client disconnect + safe recovery.
+        The next ``reset()`` call will re-capture the current pose as startup
+        home (same as the very first reset after server boot).
+        """
+        self._has_reset_once = False
+        self._num_steps = 0
+        self._elapsed_steps[:] = 0
+        self._episode_start_time = None
+        self._reset_metrics()
+        self._is_start = True
+        self._logger.info("[YAMEnv] State cleared — ready for new client connection.")
+
+    def prepare_for_next_episode(self) -> None:
+        """Reset episode bookkeeping without changing the captured startup home."""
+        self._num_steps = 0
+        self._elapsed_steps[:] = 0
+        self._episode_start_time = None
+        self._reset_metrics()
+        self._is_start = True
+        self._logger.info(
+            "[YAMEnv] Episode state cleared — ready to restart from home."
         )
 
     # ------------------------------------------------------------------
