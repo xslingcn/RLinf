@@ -174,7 +174,17 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         self._first_chunk_approved = not verbose
         self._request_shutdown = request_shutdown
 
+        # Track last client RPC time for disconnect detection.
+        self._last_rpc_time: float = time.monotonic()
+        self._client_connected: bool = False
+
+    def _touch(self) -> None:
+        """Record that a client RPC was received."""
+        self._last_rpc_time = time.monotonic()
+        self._client_connected = True
+
     def GetSpaces(self, request, context):
+        self._touch()
         obs_space = self._env.observation_space
         obs_spaces = obs_space.spaces
         act_space = self._env.action_space
@@ -237,6 +247,7 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         logger.info("[ChunkStep] First chunk approved. Executing...")
 
     def Reset(self, request, context):
+        self._touch()
         seed = request.seed if request.HasField("seed") else None
         obs, _ = self._env.reset(seed=seed)
         return _obs_to_proto(
@@ -248,6 +259,7 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         )
 
     def ChunkStep(self, request, context):
+        self._touch()
         actions = np.frombuffer(request.actions, dtype=np.float32).reshape(
             request.num_envs, request.chunk_size, request.action_dim
         )
@@ -301,18 +313,51 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         return robot_env_pb2.ChunkStepResponse(step_results=step_results)
 
     def SetTaskDescription(self, request, context):
+        self._touch()
         self._env.task_description = request.task_description
         return robot_env_pb2.Empty()
 
     def EnterZeroTorqueMode(self, request, context):
+        self._touch()
         self._env.enter_zero_torque_mode()
         return robot_env_pb2.Empty()
 
     def Close(self, request, context):
+        self._touch()
         logger.info("[RobotServer] Close RPC received. Scheduling shutdown.")
         if self._request_shutdown is not None:
             self._request_shutdown(return_home=True)
         return robot_env_pb2.Empty()
+
+    def safe_recover(self) -> None:
+        """Return arms to home, enter zero-torque, and prepare for reconnection.
+
+        Called by the watchdog when the client appears to have disconnected.
+        """
+        logger.info("[RobotServer] Client disconnected — starting safe recovery.")
+        try:
+            self._env.return_to_home()
+            logger.info("[RobotServer] Arms returned to home.")
+        except Exception as exc:
+            logger.error(f"[RobotServer] Failed to return home: {exc}")
+
+        try:
+            self._env.enter_zero_torque_mode()
+            logger.info("[RobotServer] Motors in zero-torque mode.")
+        except Exception as exc:
+            logger.error(f"[RobotServer] Failed to enter zero-torque: {exc}")
+
+        self._env.prepare_for_reconnection()
+        self._client_connected = False
+        self._first_chunk_approved = not self._verbose
+        logger.info(
+            "[RobotServer] Safe recovery complete. "
+            "Server is still listening — waiting for new client."
+        )
+
+
+_DEFAULT_CLIENT_IDLE_TIMEOUT_S = 30.0
+_WATCHDOG_POLL_INTERVAL_S = 5.0
 
 
 def serve(
@@ -322,7 +367,16 @@ def serve(
     dummy: bool = False,
     verbose: bool = False,
 ):
-    """Start the gRPC server with a YAMEnv instance."""
+    """Start the gRPC server with a YAMEnv instance.
+
+    The server stays alive across client disconnects.  A watchdog thread
+    monitors client activity; when no RPC has been received for
+    ``client_idle_timeout_s`` seconds and a client was previously connected,
+    the watchdog triggers safe recovery (return-to-home → zero-torque) and
+    then waits for the next client.
+
+    A local ``Ctrl+C`` (SIGINT/SIGTERM) shuts the server down for real.
+    """
     from rlinf.envs.yam.yam_env import YAMEnv
 
     cfg = OmegaConf.load(cfg_path)
@@ -331,6 +385,9 @@ def serve(
 
     compress = bool(cfg.get("compress_images", True))
     jpeg_quality = int(cfg.get("jpeg_quality", _JPEG_QUALITY))
+    client_idle_timeout_s = float(
+        cfg.get("client_idle_timeout_s", _DEFAULT_CLIENT_IDLE_TIMEOUT_S)
+    )
 
     logger.info(f"[RobotServer] Creating YAMEnv from config: {cfg_path}")
     env = YAMEnv(
@@ -349,14 +406,9 @@ def serve(
                 f.write("ready\n")
 
     stop_event = threading.Event()
-    shutdown_lock = threading.Lock()
-    shutdown_state = {"return_home": False}
 
     def _request_shutdown(return_home: bool) -> None:
-        with shutdown_lock:
-            if return_home:
-                shutdown_state["return_home"] = True
-            stop_event.set()
+        stop_event.set()
 
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=4),
@@ -378,8 +430,32 @@ def serve(
     server.start()
     logger.info(f"[RobotServer] Serving on port {port}")
 
+    # ---- Watchdog: detect client disconnect and trigger safe recovery ----
+    def _watchdog() -> None:
+        while not stop_event.is_set():
+            stop_event.wait(timeout=_WATCHDOG_POLL_INTERVAL_S)
+            if stop_event.is_set():
+                break
+            if not servicer._client_connected:
+                continue
+            idle_s = time.monotonic() - servicer._last_rpc_time
+            if idle_s >= client_idle_timeout_s:
+                logger.warning(
+                    "[RobotServer] No client RPC for %.0fs "
+                    "(timeout=%.0fs). Assuming client disconnected.",
+                    idle_s,
+                    client_idle_timeout_s,
+                )
+                servicer.safe_recover()
+
+    watchdog_thread = threading.Thread(
+        target=_watchdog, name="robot-server-watchdog", daemon=True
+    )
+    watchdog_thread.start()
+
+    # ---- Signal handler: local Ctrl+C triggers real shutdown ----
     def _shutdown(signum, frame):
-        _request_shutdown(return_home=True)
+        stop_event.set()
 
     signal.signal(signal.SIGINT, _shutdown)
     signal.signal(signal.SIGTERM, _shutdown)
@@ -389,7 +465,7 @@ def serve(
     logger.info("[RobotServer] Shutting down...")
     server.stop(grace=1)
     try:
-        env.close(return_home=shutdown_state["return_home"])
+        env.close(return_home=True)
     except Exception:
         pass
 

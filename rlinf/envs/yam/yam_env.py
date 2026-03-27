@@ -157,11 +157,20 @@ class YAMEnv(gym.Env):
 
         # Wall-clock episode timer.  Starts when the first real action is
         # executed (not on reset) so that inference latency does not eat into
-        # the episode budget.  _episode_duration_s is derived from config.
-        self._episode_duration_s: float = (
-            self._max_episode_steps / self._control_rate_hz
-        )
+        # the episode budget.
+        #
+        # Explicit ``episode_duration_s`` in config takes priority.  When
+        # absent, fall back to ``max_episode_steps / control_rate_hz`` — but
+        # if that exceeds 1 hour the timer is effectively disabled (the
+        # training side controls the real return-home cadence).
+        _configured_duration = cfg.get("episode_duration_s", None)
+        if _configured_duration is not None:
+            self._episode_duration_s: float = float(_configured_duration)
+        else:
+            self._episode_duration_s = self._max_episode_steps / self._control_rate_hz
         self._episode_start_time: float | None = None
+        self._timer_log_interval_s: float = 10.0
+        self._last_timer_log_time: float | None = None
 
         # Metrics (mirrors RealWorldEnv for compatibility)
         self._init_metrics()
@@ -303,6 +312,7 @@ class YAMEnv(gym.Env):
         self._num_steps = 0
         self._elapsed_steps[:] = 0
         self._episode_start_time = None
+        self._last_timer_log_time = None
         self._reset_metrics()
         self._is_start = True
 
@@ -315,17 +325,17 @@ class YAMEnv(gym.Env):
             )
             if should_skip_home:
                 # On the very first reset we only want to adopt the robot's
-                # current pose as the startup home.  After capturing, we
-                # explicitly command each arm to hold at that position so the
-                # low-level controller has a stable target and does not
-                # oscillate while waiting for the first inference action.
+                # current pose as the startup home.  Do NOT send any motor
+                # commands here — the follower servers start in zero-torque
+                # mode (kp=kd=0) and calling command_joint_pos would abruptly
+                # engage PD control, causing the arms to jerk.  The first
+                # real inference action in step() will naturally transition
+                # the controller.
                 self._capture_reset_joint_positions()
-                for name, pos in self._reset_joint_positions.items():
-                    self._robot_env.robot(name).command_joint_pos(pos)
                 raw_obs = self._robot_env.get_obs()
                 self._logger.info(
                     "[YAMEnv] Initial reset captured the current robot pose as "
-                    "startup home and commanded hold-position."
+                    "startup home (no motor commands sent)."
                 )
             else:
                 self._move_robots_to_reset_pose()
@@ -573,6 +583,23 @@ class YAMEnv(gym.Env):
         if self._episode_start_time is not None:
             elapsed_s = time.monotonic() - self._episode_start_time
             truncated = np.array([elapsed_s >= self._episode_duration_s], dtype=bool)
+            # Periodic countdown log on the local terminal.
+            now = time.monotonic()
+            if (
+                self._last_timer_log_time is None
+                or now - self._last_timer_log_time >= self._timer_log_interval_s
+            ):
+                remaining_s = max(0.0, self._episode_duration_s - elapsed_s)
+                rem_m, rem_s = divmod(int(remaining_s), 60)
+                tot_m, tot_s = divmod(int(self._episode_duration_s), 60)
+                self._logger.info(
+                    "[YAMEnv] Episode timer: %d:%02d remaining (of %d:%02d)",
+                    rem_m,
+                    rem_s,
+                    tot_m,
+                    tot_s,
+                )
+                self._last_timer_log_time = now
         else:
             truncated = np.zeros(self.num_envs, dtype=bool)
 
@@ -598,6 +625,7 @@ class YAMEnv(gym.Env):
             self._num_steps = 0
             self._elapsed_steps[:] = 0
             self._episode_start_time = None
+            self._last_timer_log_time = None
 
         return obs, reward, terminated, truncated, infos
 
@@ -747,6 +775,22 @@ class YAMEnv(gym.Env):
         self._logger.info(
             f"[YAMEnv] Entered zero-torque mode for robots: {list(robot_names)}."
         )
+
+    def prepare_for_reconnection(self) -> None:
+        """Reset internal state so the next client gets a fresh session.
+
+        Called by the robot server after a client disconnect + safe recovery.
+        The next ``reset()`` call will re-capture the current pose as startup
+        home (same as the very first reset after server boot).
+        """
+        self._has_reset_once = False
+        self._num_steps = 0
+        self._elapsed_steps[:] = 0
+        self._episode_start_time = None
+        self._last_timer_log_time = None
+        self._reset_metrics()
+        self._is_start = True
+        self._logger.info("[YAMEnv] State cleared — ready for new client connection.")
 
     # ------------------------------------------------------------------
     # Observation / action helpers
