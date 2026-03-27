@@ -343,7 +343,6 @@ def serve(
 
     if verbose:
         _print_robot_state(env)
-        # Signal the shell wrapper that state has been printed.
         ready_flag = os.environ.get("RLINF_ROBOT_SERVER_READY_FLAG")
         if ready_flag:
             with open(ready_flag, "w") as f:
@@ -387,7 +386,6 @@ def serve(
 
     stop_event.wait()
 
-    # Cleanup outside signal handler to avoid reentrant issues.
     logger.info("[RobotServer] Shutting down...")
     server.stop(grace=1)
     try:
@@ -395,7 +393,6 @@ def serve(
     except Exception:
         pass
 
-    # Force-kill any remaining child processes (cameras, portal, etc.).
     import multiprocessing
 
     for child in multiprocessing.active_children():
