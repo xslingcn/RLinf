@@ -93,6 +93,7 @@ class EmbodiedRunner:
             else None
         )
         self._countdown_deadline: float | None = None
+        self._countdown_armed = False
         self._countdown_line_len = 0
         self._countdown_lock = threading.Lock()
         self._countdown_stop_event = threading.Event()
@@ -130,6 +131,20 @@ class EmbodiedRunner:
             self._countdown_deadline = (
                 time.monotonic() + duration_s if duration_s and duration_s > 0 else None
             )
+
+    def _maybe_arm_countdown(self, env_results_list: list[dict]) -> None:
+        """Enable the Beaker-side timer only after the first full server cycle."""
+        if self._countdown_armed:
+            return
+        for result in env_results_list:
+            if not isinstance(result, dict):
+                continue
+            if any(key in result for key in ("episode_len", "return", "reward")):
+                self._countdown_armed = True
+                self.logger.info(
+                    "[Beaker Timer] Armed after the first completed server cycle."
+                )
+                return
 
     def _clear_countdown_line(self) -> None:
         if self._countdown_line_len <= 0:
@@ -313,7 +328,8 @@ class EmbodiedRunner:
                         if _step % self.weight_sync_interval == 0:
                             self.update_rollout_weights()
                     with self.timer("generate_rollouts"):
-                        self._set_countdown_deadline(self._home_cycle_duration_s)
+                        if self._countdown_armed:
+                            self._set_countdown_deadline(self._home_cycle_duration_s)
                         env_handle: Handle = self.env.interact(
                             input_channel=self.rollout_channel,
                             output_channel=self.env_channel,
@@ -389,6 +405,7 @@ class EmbodiedRunner:
                 env_results_list = [
                     results for results in env_results if results is not None
                 ]
+                self._maybe_arm_countdown(env_results_list)
                 env_metrics = compute_evaluate_metrics(env_results_list)
                 env_metrics = {f"env/{k}": v for k, v in env_metrics.items()}
                 ranked_env_results = [
