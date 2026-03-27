@@ -51,6 +51,7 @@ Optional remote-desktop simulation:
 """
 
 import json
+import sys
 
 import hydra
 import torch.multiprocessing as mp
@@ -246,6 +247,7 @@ def main(cfg) -> None:
     rollout_group = None
     env_group = None
     vlm_actor = None
+    workers_initialized = False
     try:
         cluster = Cluster(cluster_cfg=cfg.cluster)
         component_placement = HybridComponentPlacement(cfg, cluster)
@@ -276,6 +278,7 @@ def main(cfg) -> None:
         )
 
         runner.init_workers()
+        workers_initialized = True
 
         # Wire the VLM planner into env workers after they have initialised.
         vlm_actor = _launch_vlm_planner(cfg, cluster)
@@ -284,17 +287,17 @@ def main(cfg) -> None:
 
         runner.run()
     finally:
-        if env_group is not None:
+        if workers_initialized and env_group is not None:
             try:
-                env_group._close()
+                env_group.close_envs().wait()
             except Exception:
                 pass
-        if rollout_group is not None:
+        if workers_initialized and rollout_group is not None:
             try:
                 rollout_group._close()
             except Exception:
                 pass
-        if actor_group is not None:
+        if workers_initialized and actor_group is not None:
             try:
                 actor_group._close()
             except Exception:
@@ -303,4 +306,8 @@ def main(cfg) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Interrupted by user.", file=sys.stderr)
+        raise SystemExit(130) from None

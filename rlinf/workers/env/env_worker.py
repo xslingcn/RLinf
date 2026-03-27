@@ -122,6 +122,7 @@ class EnvWorker(Worker):
         self.actor_split_num = self.get_actor_split_num()
 
     def init_worker(self):
+        self._close_enabled = False
         self.dst_ranks = {
             "train": self._setup_dst_ranks(
                 self.cfg.env.train.total_num_envs // self.stage_num
@@ -171,7 +172,11 @@ class EnvWorker(Worker):
         if not self.only_eval:
             self._init_env()
 
-    def _close(self):
+        self._close_enabled = True
+
+    def close_envs(self):
+        if not getattr(self, "_close_enabled", False):
+            return
         for env in getattr(self, "env_list", []):
             try:
                 env.close()
