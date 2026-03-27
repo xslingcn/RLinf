@@ -105,7 +105,7 @@ Task description:
 ```yaml
 env:
   train:
-    task_description: "Fold the towel."
+    task_description: "pick up the red block"
 ```
 
 Reward / planner settings:
@@ -116,6 +116,25 @@ env:
     top_reward_enabled: True
     subtask_interval: 0
 ```
+
+Timing / shutdown behavior:
+
+```yaml
+env:
+  return_home_minutes: 40
+  train:
+    control_rate_hz: 10.0
+    max_episode_steps: 24000
+    max_steps_per_rollout_epoch: 24000
+    reset_on_rollout_epoch: True
+```
+
+- Change only `env.return_home_minutes` when you want a different cadence.
+- At `10 Hz`, `40` minutes becomes `24000` steps.
+- At the end of each rollout epoch, the robot returns to the captured startup
+  home pose so the arms can rest.
+- On clean shutdown or interrupt, the desktop `RobotServer` also returns the
+  robot to home before stopping.
 
 ## Local Simulated Desktop Mode
 
