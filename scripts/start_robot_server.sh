@@ -32,6 +32,8 @@
 #   --allow-plain-ssh     Allow fallback to plain ssh if autossh is unavailable
 #   --kill-video-holders  Kill stale processes holding /dev/video* before startup
 #   --no-kill-video-holders  Do not kill stale /dev/video* holders before startup
+#   --reset-can           Reset CAN interfaces before startup
+#   --no-reset-can        Do not reset CAN interfaces before startup (default)
 #   --no-tunnel           Start RobotServer only, no SSH tunnel
 #   --dummy               Run without real hardware (zero observations)
 #   --verbose             Show robot state before serving and log every chunk step
@@ -49,6 +51,7 @@ GRIPPER_OPEN=""
 GRIPPER_CLOSE=""
 ALLOW_PLAIN_SSH=false
 KILL_VIDEO_HOLDERS=true
+RESET_CAN=false
 NO_TUNNEL=false
 DUMMY=false
 VERBOSE=false
@@ -76,6 +79,8 @@ Options:
   --allow-plain-ssh     Allow fallback to plain ssh if autossh is unavailable
   --kill-video-holders  Kill stale processes holding /dev/video* before startup (default: on)
   --no-kill-video-holders  Do not kill stale /dev/video* holders before startup
+  --reset-can           Reset CAN interfaces before startup
+  --no-reset-can        Do not reset CAN interfaces before startup (default)
   --no-tunnel           Start RobotServer only, without SSH tunnel
   --dummy               Run without real hardware (zero observations)
   --verbose             Show robot state before serving and log every chunk step
@@ -118,6 +123,8 @@ while [[ $# -gt 0 ]]; do
         --allow-plain-ssh) ALLOW_PLAIN_SSH=true; shift ;;
         --kill-video-holders) KILL_VIDEO_HOLDERS=true; shift ;;
         --no-kill-video-holders) KILL_VIDEO_HOLDERS=false; shift ;;
+        --reset-can)    RESET_CAN=true; shift ;;
+        --no-reset-can) RESET_CAN=false; shift ;;
         --no-tunnel)    NO_TUNNEL=true; shift ;;
         --dummy)        DUMMY=true; shift ;;
         --verbose)      VERBOSE=true; shift ;;
@@ -316,7 +323,7 @@ elif [ -n "$(video_device_holder_pids)" ]; then
     echo ""
 fi
 
-if [ "$DUMMY" = false ]; then
+if [ "$DUMMY" = false ] && [ "$RESET_CAN" = true ]; then
     echo "=== Resetting CAN interfaces ==="
     bash third_party/yam_realtime/yam_realtime/scripts/reset_all_can.sh
     echo ""
