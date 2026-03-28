@@ -87,6 +87,8 @@ def main() -> None:
     server.bind("command_joint_pos", robot.command_joint_pos)
     server.bind("command_joint_state", robot.command_joint_state)
     server.bind("get_observations", robot.get_observations)
+    server.bind("get_robot_info", robot.get_robot_info)
+    server.bind("update_kp_kd", robot.update_kp_kd)
     server.bind("zero_torque_mode", robot.zero_torque_mode)
 
     closing = False

@@ -43,6 +43,8 @@ class YAMFollowerClient(YamRealtimeClient):
             "command_joint_pos": False,
             "command_joint_state": False,
             "get_observations": False,
+            "get_robot_info": False,
+            "update_kp_kd": False,
             "zero_torque_mode": False,
         }
         self._use_future = False
@@ -69,9 +71,6 @@ class YAMFollowerClient(YamRealtimeClient):
             "pos": Array(shape=(self.num_dofs(),), dtype=np.float32),
             "vel": Array(shape=(self.num_dofs(),), dtype=np.float32),
         }
-
-    def get_robot_info(self) -> dict[str, Any]:
-        return {}
 
     def get_robot_type(self) -> RobotType:
         return RobotType.ARM

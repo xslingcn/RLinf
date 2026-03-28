@@ -27,6 +27,9 @@ class _FakeRobot:
         self.use_future = False
         self.future_history = []
         self.zero_torque_calls = 0
+        self.kp = np.full(7, 10.0, dtype=np.float32)
+        self.kd = np.full(7, 1.0, dtype=np.float32)
+        self.update_kp_kd_calls = []
 
     def get_observations(self):
         return {
@@ -46,6 +49,16 @@ class _FakeRobot:
 
     def zero_torque_mode(self):
         self.zero_torque_calls += 1
+        self.kp = np.zeros(7, dtype=np.float32)
+        self.kd = np.zeros(7, dtype=np.float32)
+
+    def update_kp_kd(self, kp, kd):
+        self.kp = np.asarray(kp, dtype=np.float32)
+        self.kd = np.asarray(kd, dtype=np.float32)
+        self.update_kp_kd_calls.append((self.kp.copy(), self.kd.copy()))
+
+    def get_robot_info(self):
+        return {"kp": self.kp.copy(), "kd": self.kd.copy()}
 
 
 class _FakeRobotEnv:
@@ -75,6 +88,13 @@ def _make_env():
         "left": np.full(7, 0.5, dtype=np.float32),
         "right": np.full(7, -0.25, dtype=np.float32),
     }
+    env._default_robot_pd_gains = {
+        "left": (np.full(7, 10.0, dtype=np.float32), np.full(7, 1.0, dtype=np.float32)),
+        "right": (
+            np.full(7, 10.0, dtype=np.float32),
+            np.full(7, 1.0, dtype=np.float32),
+        ),
+    }
     env._logger = Mock()
     return env, left_robot, right_robot
 
@@ -103,6 +123,18 @@ def test_enter_zero_torque_mode_calls_all_connected_robots():
     env._logger.info.assert_called_with(
         "[YAMEnv] Entered zero-torque mode for robots: ['left', 'right']."
     )
+
+
+def test_move_robots_to_reset_pose_restores_default_pd_gains_after_zero_torque():
+    env, left_robot, right_robot = _make_env()
+
+    env.enter_zero_torque_mode()
+    env._move_robots_to_reset_pose()
+
+    assert left_robot.update_kp_kd_calls
+    assert right_robot.update_kp_kd_calls
+    assert np.allclose(left_robot.kp, np.full(7, 10.0, dtype=np.float32))
+    assert np.allclose(right_robot.kp, np.full(7, 10.0, dtype=np.float32))
 
 
 def test_read_robot_joint_position_combines_joint_and_gripper_state():

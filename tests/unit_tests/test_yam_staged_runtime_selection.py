@@ -30,6 +30,7 @@ assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
 _is_expected_remote_disconnect_error = _MODULE._is_expected_remote_disconnect_error
+_start_remote_disconnect_monitor = _MODULE._start_remote_disconnect_monitor
 _use_async_embodied_runtime = _MODULE._use_async_embodied_runtime
 
 
@@ -54,3 +55,42 @@ def test_remote_disconnect_error_detector_matches_remote_env_disconnect() -> Non
 
 def test_remote_disconnect_error_detector_ignores_unrelated_failures() -> None:
     assert _is_expected_remote_disconnect_error(ValueError("ordinary failure")) is False
+
+
+def test_remote_disconnect_monitor_invokes_shutdown_callback(monkeypatch) -> None:
+    cfg = OmegaConf.create(
+        {
+            "env": {
+                "train": {
+                    "env_type": "remote",
+                    "remote_server_url": "localhost:50051",
+                }
+            }
+        }
+    )
+    calls = []
+
+    class _FailingSocket:
+        def __enter__(self):
+            raise OSError("disconnect")
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    monkeypatch.setattr(_MODULE, "_REMOTE_MONITOR_POLL_S", 0.01)
+    monkeypatch.setattr(_MODULE, "_REMOTE_MONITOR_CONNECT_TIMEOUT_S", 0.01)
+    monkeypatch.setattr(_MODULE, "_REMOTE_MONITOR_FAILURE_THRESHOLD", 1)
+    monkeypatch.setattr(
+        _MODULE.socket, "create_connection", lambda *args, **kwargs: _FailingSocket()
+    )
+    _MODULE._REMOTE_DISCONNECT_EVENT.clear()
+
+    stop_event, thread = _start_remote_disconnect_monitor(
+        cfg, on_disconnect=lambda: calls.append("shutdown")
+    )
+    thread.join(timeout=0.2)
+    stop_event.set()
+
+    assert calls == ["shutdown"]
+    assert _MODULE._REMOTE_DISCONNECT_EVENT.is_set() is True
+    _MODULE._REMOTE_DISCONNECT_EVENT.clear()

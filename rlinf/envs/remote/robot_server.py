@@ -184,6 +184,7 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         )
         self._cooldown_deadline: float | None = None
         self._restart_required: bool = False
+        self._restart_truncation_pending: bool = False
         # Protects all env operations so that safe_recover() and gRPC
         # handlers never touch the robot concurrently (the portal clients'
         # use_future flag is not thread-safe).
@@ -265,6 +266,7 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
             self._env.prepare_for_next_episode()
 
         self._restart_required = True
+        self._restart_truncation_pending = True
         self._cooldown_deadline = (
             time.monotonic() + cooldown_s if cooldown_s > 0 else None
         )
@@ -285,6 +287,11 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
         self._cooldown_deadline = None
         logger.info("[RobotServer] Episode/session restarted from home.")
         return obs
+
+    def poll_restart_if_ready(self) -> dict | None:
+        """Finish a cooldown-driven restart outside request handlers when ready."""
+        with self._env_lock:
+            return self._finish_restart_if_ready_locked()
 
     def GetSpaces(self, request, context):
         self._touch()
@@ -400,8 +407,10 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
                 obs = self._finish_restart_if_ready_locked()
                 if obs is None:
                     obs = self._env._wrap_obs(self._get_current_raw_obs_locked())
+                emit_truncated = self._restart_truncation_pending
+                self._restart_truncation_pending = False
                 return self._build_idle_chunk_response(
-                    obs, request.chunk_size, truncated=True
+                    obs, request.chunk_size, truncated=emit_truncated
                 )
 
         if not self._first_chunk_approved:
@@ -674,6 +683,7 @@ def serve(
                     sys.stdout.flush()
                     last_line_len = len(line)
                     continue
+                servicer.poll_restart_if_ready()
             if start is None:
                 # Clear the timer line when no episode is active.
                 if last_line_len > 0:
