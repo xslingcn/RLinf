@@ -50,7 +50,6 @@ Optional remote-desktop simulation:
     still talks gRPC, but no real desktop machine or SSH tunnel is required.
 """
 
-import _thread
 import json
 import signal
 import socket
@@ -108,7 +107,7 @@ def _parse_host_port(server_url: str) -> tuple[str, int]:
     return host, int(port_str)
 
 
-def _start_remote_disconnect_monitor(cfg):
+def _start_remote_disconnect_monitor(cfg, on_disconnect=None):
     """Stop Beaker training when the desktop RobotServer disappears."""
     if str(cfg.env.train.get("env_type", "")).lower() != "remote":
         return None, None
@@ -138,7 +137,11 @@ def _start_remote_disconnect_monitor(cfg):
                     file=sys.stderr,
                     flush=True,
                 )
-                _thread.interrupt_main()
+                if on_disconnect is not None:
+                    try:
+                        on_disconnect()
+                    except Exception:
+                        pass
                 return
 
     thread = threading.Thread(
@@ -444,10 +447,16 @@ def main(cfg) -> None:
             env=env_group,
         )
 
+        def _handle_remote_disconnect() -> None:
+            _suppress_worker_failure_signal()
+            _shutdown_worker_group_fast(env_group)
+            _shutdown_worker_group_fast(rollout_group)
+            _shutdown_worker_group_fast(actor_group)
+
         runner.init_workers()
         workers_initialized = True
         remote_monitor_stop, remote_monitor_thread = _start_remote_disconnect_monitor(
-            cfg
+            cfg, on_disconnect=_handle_remote_disconnect
         )
 
         # Wire the VLM planner into env workers after they have initialised.
@@ -459,7 +468,9 @@ def main(cfg) -> None:
         fast_shutdown = True
         raise
     except Exception as error:
-        if _is_expected_remote_disconnect_error(error):
+        if _REMOTE_DISCONNECT_EVENT.is_set() or _is_expected_remote_disconnect_error(
+            error
+        ):
             fast_shutdown = True
             remote_disconnect_exit = True
             _REMOTE_DISCONNECT_EVENT.set()
