@@ -31,6 +31,12 @@ episode_duration_s: ${oc.env:RLINF_EPISODE_DURATION_S,120}
 # immediately, or override to any number of minutes you want.
 episode_cooldown_minutes: ${oc.env:RLINF_EPISODE_COOLDOWN_MINUTES,1}
 
+# Disable the "no RPC seen" watchdog by default for real-robot training. This
+# keeps the desktop server alive through long Beaker-side pauses until you
+# explicitly stop training or the episode timer expires. Set to a positive
+# number of seconds if you want automatic safe recovery on silent disconnects.
+client_idle_timeout_s: 0
+
 # Robot control
 control_rate_hz: 30.0
 

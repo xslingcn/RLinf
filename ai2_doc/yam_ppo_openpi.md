@@ -137,6 +137,7 @@ Desktop server timing:
 # examples/embodiment/config/env/yam_pi05_follower.yaml
 episode_duration_s: 120
 episode_cooldown_minutes: 1
+client_idle_timeout_s: 0
 ```
 
 - Change only `env.return_home_minutes` when you want a different cadence.
@@ -148,6 +149,10 @@ episode_cooldown_minutes: 1
   home instead of continuing the old chunk.
 - `episode_cooldown_minutes` controls how long the server waits at home before
   accepting the restarted episode. Set it to `0` for an immediate restart.
+- `client_idle_timeout_s: 0` disables the desktop-side "no RPC seen" watchdog,
+  so the server keeps running until you explicitly stop it. Set a positive
+  number of seconds only if you want automatic safe recovery after a silent
+  Beaker disconnect.
 - A Beaker-side `Ctrl+C` now asks the desktop server to return home and enter
   zero-torque / zero-gravity while staying alive for the next client.
 - A desktop-side `Ctrl+C` still performs the full local shutdown: return home,

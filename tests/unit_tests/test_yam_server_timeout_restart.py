@@ -20,7 +20,10 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from rlinf.envs.remote.robot_server import RobotEnvServicer
+from rlinf.envs.remote.robot_server import (
+    RobotEnvServicer,
+    _parse_client_idle_timeout_s,
+)
 from rlinf.envs.yam.yam_env import YAMEnv
 
 
@@ -148,6 +151,13 @@ def test_get_observation_returns_current_obs_without_resetting_robot():
     assert env.return_home_calls == 0
     assert env.zero_torque_calls == 0
     assert env.chunk_step_calls == 0
+
+
+def test_non_positive_client_idle_timeout_disables_watchdog():
+    assert _parse_client_idle_timeout_s(None) is None
+    assert _parse_client_idle_timeout_s(0) is None
+    assert _parse_client_idle_timeout_s(-1) is None
+    assert _parse_client_idle_timeout_s(120) == 120.0
 
 
 def test_chunk_step_discards_stale_actions_while_cooldown_is_active():
