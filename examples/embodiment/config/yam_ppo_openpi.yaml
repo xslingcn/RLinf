@@ -160,9 +160,9 @@ env:
     control_rate_hz: 10.0
     # Do not return home when a new rollout epoch starts.
     reset_on_rollout_epoch: False
-    # Instead, return home after the rollout epoch finishes (about
-    # env.return_home_minutes later) so the robot can rest.
-    reset_on_rollout_epoch_end: True
+    # Keep training epoch boundaries purely for bookkeeping. Real robot
+    # cadence is controlled only by the desktop server timer / manual stop.
+    reset_on_rollout_epoch_end: False
 
     task_description: "Fold the towel."
 
