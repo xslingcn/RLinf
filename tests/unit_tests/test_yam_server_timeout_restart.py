@@ -20,7 +20,10 @@ from unittest.mock import Mock
 
 import numpy as np
 
-from rlinf.envs.remote.robot_server import RobotEnvServicer
+from rlinf.envs.remote.robot_server import (
+    RobotEnvServicer,
+    _parse_client_idle_timeout_s,
+)
 from rlinf.envs.yam.yam_env import YAMEnv
 
 
@@ -150,6 +153,13 @@ def test_get_observation_returns_current_obs_without_resetting_robot():
     assert env.chunk_step_calls == 0
 
 
+def test_non_positive_client_idle_timeout_disables_watchdog():
+    assert _parse_client_idle_timeout_s(None) is None
+    assert _parse_client_idle_timeout_s(0) is None
+    assert _parse_client_idle_timeout_s(-1) is None
+    assert _parse_client_idle_timeout_s(120) == 120.0
+
+
 def test_chunk_step_discards_stale_actions_while_cooldown_is_active():
     env = _FakeServicerEnv()
     servicer = RobotEnvServicer(env)
@@ -169,3 +179,17 @@ def test_chunk_step_discards_stale_actions_while_cooldown_is_active():
     assert env.chunk_step_calls == 0
     assert len(response.step_results) == 2
     assert response.step_results[-1].truncated is True
+
+
+def test_episode_timeout_enters_zero_torque_during_cooldown_restart():
+    env = _FakeServicerEnv()
+    env._episode_start_time = time.monotonic() - 5.0
+    env._episode_duration_s = 1.0
+    servicer = RobotEnvServicer(env)
+
+    servicer.episode_timeout()
+
+    assert env.return_home_calls == 1
+    assert env.zero_torque_calls == 1
+    assert env.prepare_for_next_episode_calls == 1
+    assert servicer._restart_required is True

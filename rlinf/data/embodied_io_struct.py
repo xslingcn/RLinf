@@ -569,12 +569,16 @@ class EmbodiedRolloutResult:
 
     def append_transitions(self, curr_obs=None, next_obs=None):
         assert curr_obs is not None and next_obs is not None
-        if "task_descriptions" in curr_obs:
-            curr_obs.pop("task_descriptions")
-        if "task_descriptions" in next_obs:
-            next_obs.pop("task_descriptions")
-        self.curr_obs.append(curr_obs)
-        self.next_obs.append(next_obs)
+        # Never mutate the live env observations in place. Async env workers
+        # reuse the latest obs dict across rollout epochs; popping
+        # ``task_descriptions`` here would silently remove the instruction from
+        # the next policy forward pass.
+        curr_obs_copy = dict(curr_obs)
+        next_obs_copy = dict(next_obs)
+        curr_obs_copy.pop("task_descriptions", None)
+        next_obs_copy.pop("task_descriptions", None)
+        self.curr_obs.append(curr_obs_copy)
+        self.next_obs.append(next_obs_copy)
 
     def to_trajectory(self) -> Trajectory:
         # return [trajectory_length, B, ...]

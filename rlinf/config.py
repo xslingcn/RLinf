@@ -755,6 +755,11 @@ def validate_embodied_cfg(cfg):
             cfg.env.server_episode_duration_s = return_home_minutes * 60.0
             if server_cooldown_minutes is not None:
                 cfg.env.server_cooldown_s = float(server_cooldown_minutes) * 60.0
+            # When cadence is driven by the desktop RobotServer timer, rollout
+            # epoch boundaries must never command an extra env.reset(), or the
+            # real robot will return home early for a training bookkeeping
+            # reason instead of a true timeout / operator stop.
+            cfg.env.train.reset_on_rollout_epoch_end = False
             for split in ("train", "eval"):
                 control_rate_hz = float(cfg.env[split].get("control_rate_hz", 0.0))
                 if control_rate_hz <= 0:

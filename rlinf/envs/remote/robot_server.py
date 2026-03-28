@@ -495,7 +495,7 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
                     "[RobotServer] Episode timer expired — returning home and "
                     "starting the server-side restart countdown."
                 ),
-                enter_zero_torque=False,
+                enter_zero_torque=True,
                 cooldown_s=self._episode_cooldown_s,
                 prepare_for_reconnection=False,
             )
@@ -538,6 +538,22 @@ _DEFAULT_CLIENT_IDLE_TIMEOUT_S = 120.0
 _WATCHDOG_POLL_INTERVAL_S = 5.0
 
 
+def _parse_client_idle_timeout_s(raw_timeout: object) -> float | None:
+    """Normalize the client-idle watchdog timeout.
+
+    ``None`` or any non-positive value disables the watchdog entirely. This is
+    useful for long-running real-robot sessions where the Beaker side may go
+    quiet for extended periods during planner/model work, but the desktop
+    server should keep the robot session alive until an explicit stop.
+    """
+    if raw_timeout is None:
+        return None
+    timeout_s = float(raw_timeout)
+    if timeout_s <= 0:
+        return None
+    return timeout_s
+
+
 def serve(
     cfg_path: str,
     port: int = _DEFAULT_PORT,
@@ -563,7 +579,7 @@ def serve(
 
     compress = bool(cfg.get("compress_images", True))
     jpeg_quality = int(cfg.get("jpeg_quality", _JPEG_QUALITY))
-    client_idle_timeout_s = float(
+    client_idle_timeout_s = _parse_client_idle_timeout_s(
         cfg.get("client_idle_timeout_s", _DEFAULT_CLIENT_IDLE_TIMEOUT_S)
     )
 
@@ -628,10 +644,17 @@ def serve(
                 )
                 servicer.safe_recover(idle_timeout_s=client_idle_timeout_s)
 
-    watchdog_thread = threading.Thread(
-        target=_watchdog, name="robot-server-watchdog", daemon=True
-    )
-    watchdog_thread.start()
+    watchdog_thread = None
+    if client_idle_timeout_s is not None:
+        watchdog_thread = threading.Thread(
+            target=_watchdog, name="robot-server-watchdog", daemon=True
+        )
+        watchdog_thread.start()
+    else:
+        logger.info(
+            "[RobotServer] Client-idle watchdog disabled; the server will keep "
+            "running until an explicit stop or episode timeout."
+        )
 
     # ---- Timer: 1-second countdown display + episode timeout handling ----
     def _timer_display() -> None:
