@@ -495,7 +495,7 @@ class RobotEnvServicer(robot_env_pb2_grpc.RobotEnvServiceServicer):
                     "[RobotServer] Episode timer expired — returning home and "
                     "starting the server-side restart countdown."
                 ),
-                enter_zero_torque=False,
+                enter_zero_torque=True,
                 cooldown_s=self._episode_cooldown_s,
                 prepare_for_reconnection=False,
             )

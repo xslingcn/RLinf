@@ -179,3 +179,17 @@ def test_chunk_step_discards_stale_actions_while_cooldown_is_active():
     assert env.chunk_step_calls == 0
     assert len(response.step_results) == 2
     assert response.step_results[-1].truncated is True
+
+
+def test_episode_timeout_enters_zero_torque_during_cooldown_restart():
+    env = _FakeServicerEnv()
+    env._episode_start_time = time.monotonic() - 5.0
+    env._episode_duration_s = 1.0
+    servicer = RobotEnvServicer(env)
+
+    servicer.episode_timeout()
+
+    assert env.return_home_calls == 1
+    assert env.zero_torque_calls == 1
+    assert env.prepare_for_next_episode_calls == 1
+    assert servicer._restart_required is True
