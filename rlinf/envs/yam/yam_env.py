@@ -151,6 +151,7 @@ class YAMEnv(gym.Env):
             cfg.get("reset_joint_positions", None)
         )
         self._reset_joint_positions: dict[str, np.ndarray] = {}
+        self._default_robot_pd_gains: dict[str, tuple[np.ndarray, np.ndarray]] = {}
 
         self._num_steps = 0
         self._elapsed_steps = np.zeros(self.num_envs, dtype=np.int32)
@@ -300,6 +301,7 @@ class YAMEnv(gym.Env):
             control_rate_hz=rate,
             use_joint_state_as_action=False,
         )
+        self._capture_default_robot_pd_gains()
         self._logger.info("[YAMEnv] Robot connected.")
 
     # ------------------------------------------------------------------
@@ -415,6 +417,55 @@ class YAMEnv(gym.Env):
             f"{ {side: target.tolist() for side, target in self._reset_joint_positions.items()} }"
         )
 
+    def _capture_default_robot_pd_gains(self) -> None:
+        """Record each robot's default PD gains so zero-torque can be undone."""
+        if self._is_dummy or self._robot_env is None:
+            return
+
+        default_gains: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+        for name in self._robot_env.get_all_robots().keys():
+            robot = self._robot_env.robot(name)
+            get_robot_info = getattr(robot, "get_robot_info", None)
+            if not callable(get_robot_info):
+                continue
+            try:
+                info = get_robot_info()
+            except Exception:
+                continue
+            kp = info.get("kp")
+            kd = info.get("kd")
+            if kp is None or kd is None:
+                continue
+            default_gains[name] = (
+                np.asarray(kp, dtype=np.float32).copy(),
+                np.asarray(kd, dtype=np.float32).copy(),
+            )
+        self._default_robot_pd_gains = default_gains
+
+    def _restore_robot_pd_gains(self) -> None:
+        """Restore each robot's default PD gains after zero-torque mode."""
+        if self._is_dummy or self._robot_env is None:
+            return
+        if not self._default_robot_pd_gains:
+            return
+
+        restored_robots: list[str] = []
+        for name, (kp, kd) in self._default_robot_pd_gains.items():
+            robot = self._robot_env.robot(name)
+            update_kp_kd = getattr(robot, "update_kp_kd", None)
+            if not callable(update_kp_kd):
+                continue
+            try:
+                update_kp_kd(kp.copy(), kd.copy())
+                restored_robots.append(name)
+            except Exception:
+                continue
+
+        if restored_robots:
+            self._logger.info(
+                f"[YAMEnv] Restored default PD gains for robots: {restored_robots}."
+            )
+
     @contextmanager
     def _use_robot_command_futures(self, robot_names: tuple[str, ...]):
         """Temporarily enable future-returning RPC calls for follower clients."""
@@ -472,6 +523,7 @@ class YAMEnv(gym.Env):
             return
 
         assert self._robot_env is not None, "Robot environment is not initialized."
+        self._restore_robot_pd_gains()
         robot_names = tuple(self._robot_env.get_all_robots().keys())
         if not robot_names:
             return
