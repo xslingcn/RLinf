@@ -89,6 +89,12 @@ _REMOTE_MONITOR_CONNECT_TIMEOUT_S = 0.5
 _REMOTE_MONITOR_FAILURE_THRESHOLD = 3
 _REMOTE_SAFE_RECOVERY_TIMEOUT_S = 5.0
 _REMOTE_DISCONNECT_EVENT = threading.Event()
+_REMOTE_DISCONNECT_MARKERS = (
+    "RobotServerDisconnectedError",
+    "[RemoteEnv] Robot server disconnected during",
+    "failed to connect to all addresses",
+    "grpc unavailable",
+)
 
 
 def _use_async_embodied_runtime(cfg) -> bool:
@@ -205,6 +211,18 @@ def _suppress_worker_failure_signal() -> None:
         signal.signal(signal.SIGUSR1, signal.SIG_IGN)
     except Exception:
         pass
+
+
+def _is_expected_remote_disconnect_error(error: BaseException | None) -> bool:
+    """Return whether an exception is the expected remote robot disconnect path."""
+    seen: set[int] = set()
+    current = error
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if any(marker in str(current) for marker in _REMOTE_DISCONNECT_MARKERS):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
 
 
 def _compute_vlm_gpu_index(cfg) -> int:
@@ -383,6 +401,7 @@ def main(cfg) -> None:
     remote_monitor_stop = None
     remote_monitor_thread = None
     fast_shutdown = False
+    remote_disconnect_exit = False
     try:
         cluster = Cluster(cluster_cfg=cfg.cluster)
         component_placement = HybridComponentPlacement(cfg, cluster)
@@ -438,6 +457,18 @@ def main(cfg) -> None:
     except KeyboardInterrupt:
         fast_shutdown = True
         raise
+    except Exception as error:
+        if _is_expected_remote_disconnect_error(error):
+            fast_shutdown = True
+            remote_disconnect_exit = True
+            _REMOTE_DISCONNECT_EVENT.set()
+            print(
+                "Detected remote robot server disconnect. Training stopped.",
+                file=sys.stderr,
+                flush=True,
+            )
+        else:
+            raise
     finally:
         if remote_monitor_stop is not None:
             remote_monitor_stop.set()
@@ -467,6 +498,8 @@ def main(cfg) -> None:
                 except Exception:
                     pass
         stop_process(simulated_desktop_server)
+    if remote_disconnect_exit:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

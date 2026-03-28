@@ -16,6 +16,7 @@ import asyncio
 
 from omegaconf.omegaconf import DictConfig
 
+from rlinf.envs.remote.remote_env import RobotServerDisconnectedError
 from rlinf.scheduler import Channel
 from rlinf.workers.env.env_worker import EnvWorker
 
@@ -54,12 +55,19 @@ class AsyncEnvWorker(EnvWorker):
         replay_channel: Channel | None,
     ):
         while True:
-            env_metrics = await self._run_interact_once(
-                input_channel,
-                output_channel,
-                replay_channel,
-                cooperative_yield=True,
-            )
+            try:
+                env_metrics = await self._run_interact_once(
+                    input_channel,
+                    output_channel,
+                    replay_channel,
+                    cooperative_yield=True,
+                )
+            except RobotServerDisconnectedError as error:
+                self.log_warning(
+                    f"{error} Waiting for the staged entrypoint to stop training."
+                )
+                while True:
+                    await asyncio.sleep(1.0)
 
             env_metrics = {f"env/{k}": v for k, v in env_metrics.items()}
             env_interact_time_metrics = self.pop_execution_times()
