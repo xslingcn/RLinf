@@ -29,6 +29,7 @@ _SPEC = importlib.util.spec_from_file_location(
 assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_MODULE)
+_is_expected_remote_disconnect_error = _MODULE._is_expected_remote_disconnect_error
 _use_async_embodied_runtime = _MODULE._use_async_embodied_runtime
 
 
@@ -40,3 +41,16 @@ def test_decoupled_actor_critic_uses_async_staged_runtime() -> None:
 def test_actor_critic_uses_sync_staged_runtime() -> None:
     cfg = OmegaConf.create({"algorithm": {"loss_type": "actor_critic"}})
     assert _use_async_embodied_runtime(cfg) is False
+
+
+def test_remote_disconnect_error_detector_matches_remote_env_disconnect() -> None:
+    error = RuntimeError(
+        "ray worker failed: "
+        "[RemoteEnv] Robot server disconnected during ChunkStep (gRPC UNAVAILABLE)."
+    )
+
+    assert _is_expected_remote_disconnect_error(error) is True
+
+
+def test_remote_disconnect_error_detector_ignores_unrelated_failures() -> None:
+    assert _is_expected_remote_disconnect_error(ValueError("ordinary failure")) is False
