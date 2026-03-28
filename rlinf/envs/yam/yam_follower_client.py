@@ -43,6 +43,8 @@ class YAMFollowerClient(YamRealtimeClient):
             "command_joint_pos": False,
             "command_joint_state": False,
             "get_observations": False,
+            "get_robot_info": False,
+            "update_kp_kd": False,
             "zero_torque_mode": False,
         }
         self._use_future = False
