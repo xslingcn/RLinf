@@ -48,9 +48,7 @@ assert _ASYNC_SPEC is not None and _ASYNC_SPEC.loader is not None
 _ASYNC_MODULE = importlib.util.module_from_spec(_ASYNC_SPEC)
 _ASYNC_SPEC.loader.exec_module(_ASYNC_MODULE)
 _ASYNC_FORCED_ASYNC_RUNTIME = _ASYNC_MODULE._FORCED_ASYNC_RUNTIME
-_CONFIG_DIR = (
-    Path(__file__).resolve().parents[2] / "examples" / "embodiment" / "config"
-)
+_CONFIG_DIR = Path(__file__).resolve().parents[2] / "examples" / "embodiment" / "config"
 
 
 def test_sync_staged_entrypoint_forces_sync_runtime() -> None:
